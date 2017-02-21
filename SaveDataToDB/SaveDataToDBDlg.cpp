@@ -586,7 +586,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 			CameraResult* tempResult = NULL;
 			tempResult = m_lsReadLocal.front();
 			m_lsReadLocal.pop_front();
-
+			LeaveCriticalSection(&m_csReadLocal);			//new
 			if (NULL == tempResult)
 			{
 				WriteDlgLog("获取的结果为NULL");
@@ -656,7 +656,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				//ReleaseMutex(m_hReadLocal);			//2015-01-19
 				LeaveCriticalSection(&m_csSaveLocal);
 			}
-			LeaveCriticalSection(&m_csReadLocal);
+			//LeaveCriticalSection(&m_csReadLocal);
 			Sleep(60);
 		}
 		else
@@ -699,7 +699,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 			
 			CameraResult* tempResult = m_lsReadRemote.front();
 			m_lsReadRemote.pop_front();
-
+			LeaveCriticalSection(&m_csReadRemote);
 			if (NULL == tempResult)
 			{
 				WriteDlgRemotLog("获取的结果为NULL");
@@ -737,7 +737,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 				LeaveCriticalSection(&m_csSaveRemote);
 				//ReleaseMutex(m_hReadRemote);				//2015-01-19
 			}
-			LeaveCriticalSection(&m_csReadRemote);
+			//LeaveCriticalSection(&m_csReadRemote);
 			Sleep(60);
 		}
 		else
