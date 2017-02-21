@@ -8,7 +8,8 @@
 #include "afxcmn.h"
 #include "afxwin.h"
 
-#define MAX_THREADCOUNT 5
+#define MAX_THREADCOUNT 1
+#define MAX_LOCALTHREADCOUNT 5
 
 struct ListItemData
 {
@@ -62,7 +63,7 @@ public:
 	std::list<CameraResult*>m_lsReadRemote;
 	std::list<CameraResult*>m_lsSaveRemote;
 
-	HANDLE m_hSaveLocalDB[MAX_THREADCOUNT];
+	HANDLE m_hSaveLocalDB[MAX_LOCALTHREADCOUNT];
 	HANDLE m_hSaveRemoteDB[MAX_THREADCOUNT];
 
 	HANDLE m_hSaveStatusToDB;

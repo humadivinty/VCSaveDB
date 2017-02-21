@@ -6,8 +6,6 @@
 #include <string>
 using namespace std;
 
-#define  SAVE_TO_CACHE_DIRECTORY 1
-#define  SAVE_TO_BACKUP_DIRECTORY 2
 class CCamera
 {
 public:
@@ -69,11 +67,6 @@ public:
 	CRITICAL_SECTION* g_csLocalCriticalSection;
 	CRITICAL_SECTION* g_csRemoteCriticalSection;
 
-	list<CameraResult*>* g_lsBackUpLocalData;
-	list<CameraResult*>* g_lsBackUpRemoteData;
-	CRITICAL_SECTION* g_csBackUpLocalCriticalSection;
-	CRITICAL_SECTION* g_csBackUpRemoteCriticalSection;
-
 	//结果信号量
 	HANDLE m_hSemaphore;
 
@@ -126,10 +119,7 @@ public:
 
 	bool SetListAndMutex(list<CameraResult*>* localList, HANDLE* localMutex, list<CameraResult*>* RemoteList, HANDLE* remoteMutex);
 	
-	bool SetListAndCriticalSection(list<CameraResult*>* localList, CRITICAL_SECTION* localCriticalSection, 
-		list<CameraResult*>* RemoteList, CRITICAL_SECTION* remoteCriticalSection,
-		list<CameraResult*>* BackUplocalList, CRITICAL_SECTION* BackUplocalCriticalSection,
-		list<CameraResult*>* BackUpRemoteList, CRITICAL_SECTION* BackUpRemoteCriticalSection);
+	bool SetListAndCriticalSection(list<CameraResult*>* localList, CRITICAL_SECTION* localCriticalSection, list<CameraResult*>* RemoteList, CRITICAL_SECTION* remoteCriticalSection);
 
 private:
 	int WriteIniFile();		
@@ -137,7 +127,7 @@ private:
 	int ReadHistoryIniFile();				//从配置文件中获取历史结果信息
 	int WriteHistoryIniFile();				//将历史结果信息写入配置文件中
 
-	bool saveImage(CameraResult* pRecord, int iSaveToNormalOrBackUp);		//将结果保存到本地硬盘中, 当iSaveToNormalOrBackUp值为1时，保存到缓存目录，当值为2时保存到备份目录
+	bool saveImage(CameraResult* pRecord);		//将结果保存到本地硬盘中
 
 
 	BOOL MyResolveParamXml(char *pszXmlBuf, ParamValue *pParamValue);		//解析出路口名称和路口方向

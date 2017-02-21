@@ -61,11 +61,6 @@ CCamera::CCamera(void)
 	g_hRemoteListMutex = NULL;
 	g_csLocalCriticalSection = NULL;
 	g_csRemoteCriticalSection = NULL;
-
-	g_lsBackUpLocalData = NULL;
-	g_lsBackUpRemoteData = NULL;
-	g_csBackUpLocalCriticalSection = NULL;
-	g_csBackUpRemoteCriticalSection = NULL;
 }
 
 CCamera::CCamera(char* IP)
@@ -116,11 +111,6 @@ CCamera::CCamera(char* IP)
 	g_hRemoteListMutex = NULL;
 	g_csLocalCriticalSection = NULL;
 	g_csRemoteCriticalSection = NULL;
-
-	g_lsBackUpLocalData = NULL;
-	g_lsBackUpRemoteData = NULL;
-	g_csBackUpLocalCriticalSection = NULL;
-	g_csBackUpRemoteCriticalSection = NULL;
 }
 
 CCamera::~CCamera(void)
@@ -142,12 +132,6 @@ CCamera::~CCamera(void)
 	g_hRemoteListMutex = NULL;
 	g_csLocalCriticalSection = NULL;
 	g_csRemoteCriticalSection = NULL;
-
-	g_lsBackUpLocalData = NULL;
-	g_lsBackUpRemoteData = NULL;
-	g_csBackUpLocalCriticalSection = NULL;
-	g_csBackUpRemoteCriticalSection = NULL;
-
 }
 // 识别结果开始回调函数
 int CCamera::RecordInfoBegin(DWORD dwCarID)
@@ -180,13 +164,23 @@ int CCamera::RecordInfoBegin(DWORD dwCarID)
 
 			if (S_OK == ::CoCreateGuid(&guid))
 			{
-				sprintf(m_Result->chListNo, "%04X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X"
+				//sprintf(m_Result->chListNo, "%04X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X"
+				//	,st.wYear, st.wMonth, st.wDay
+				//	,st.wHour, st.wMinute
+				//	,st.wSecond, wMilliseconds_Temp
+				//	,iTempIP1, iTempIP2
+				//	,iTempIP3, ITempIP4, 
+				//	guid.Data4[4], guid.Data4[5]
+				//	,guid.Data4[6], guid.Data4[7]
+				//	);
+				sprintf(m_Result->chListNo, "%04X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%04X"
 					,st.wYear, st.wMonth, st.wDay
 					,st.wHour, st.wMinute
 					,st.wSecond, wMilliseconds_Temp
 					,iTempIP1, iTempIP2
-					,iTempIP3, ITempIP4, guid.Data4[4], guid.Data4[5]
-					,guid.Data4[6], guid.Data4[7]
+					,iTempIP3, ITempIP4, 
+					guid.Data4[4], guid.Data4[5]
+					,wMilliseconds_Temp
 					);
 			}
 
@@ -220,10 +214,15 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	}
 	if (NULL == m_Result)
 	{
+		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
 	
 	m_bResultComplete = true;
+
+	char chCameraListCount[260] = {0};
+	sprintf(chCameraListCount, "Current Camera list  count = %d", m_ResultList.size());
+	WriteLog(chCameraListCount);
 
 	//加入结果队列中
 	if (m_ResultList.size() < MAX_LIST_COUNT)
@@ -242,41 +241,13 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	{
 		char szLog[256] = {0};
 		sprintf(szLog, "队列满了，直接删除结果 < CarID : %08d, 车牌 : %s > \n", m_Result->dwCarID, m_Result->chPlateNO);
-		//sprintf(szLog, "队列满了，将结果缓存到本地 < CarID : %08d, 车牌 : %s , ListNo : %s> \n", m_Result->dwCarID, m_Result->chPlateNO, m_Result->chListNo);
 		WriteLog(szLog);
-
-		// 保存结果到本地缓存目录
-		//saveImage(m_Result, SAVE_TO_CACHE_DIRECTORY);
-		//saveImage(m_Result, SAVE_TO_BACKUP_DIRECTORY);
-
-		////将结果加入到缓存本地线程队列
-		//if (m_bDbEnable)
-		//{
-		//	EnterCriticalSection(g_csBackUpLocalCriticalSection);
-
-		//	CameraResult *tempBackUpLocalResult =NULL;			
-		//	tempBackUpLocalResult = new CameraResult(*m_Result);
-		//	g_lsBackUpLocalData->push_back(tempBackUpLocalResult);
-
-		//	LeaveCriticalSection(g_csBackUpLocalCriticalSection);
-		//}
-		//if (m_bMidDbEnable)
-		//{
-		//	EnterCriticalSection(g_csBackUpRemoteCriticalSection);
-
-		//	CameraResult *tempBackUpRemoteResult =NULL;			
-		//	tempBackUpRemoteResult = new CameraResult(*m_Result);
-		//	g_lsBackUpRemoteData->push_back(tempBackUpRemoteResult);
-
-		//	LeaveCriticalSection(g_csBackUpRemoteCriticalSection);
-		//}
 
 		if (m_Result != NULL)
 		{
 			delete m_Result;
 			m_Result = NULL;
 		}
-
 	}
 
 	LeaveCriticalSection(&m_csResult);
@@ -296,6 +267,7 @@ int CCamera::RecordInfoPlate(DWORD dwCarID,
 
 	if (NULL == m_Result)
 	{
+		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
 
@@ -310,9 +282,9 @@ int CCamera::RecordInfoPlate(DWORD dwCarID,
 		m_Result->dw64TimeMS = dw64TimeMS;
 		sprintf(m_Result->chPlateNO, "%s",pcPlateNo);
 
-		tempPtr = new char[4048];
-		memset(tempPtr, NULL,4048);
-		HVAPIUTILS_ParsePlateXmlStringEx(pcAppendInfo, tempPtr, 4096);
+		tempPtr = new char[2048];
+		memset(tempPtr, NULL,2048);
+		HVAPIUTILS_ParsePlateXmlStringEx(pcAppendInfo, tempPtr, 2048);
 		m_Result->pcAppendInfo = tempPtr;
 	}
 	//对结果进行处理
@@ -338,6 +310,7 @@ int CCamera::RecordInfoBigImage(DWORD dwCarID,
 
 	if (NULL == m_Result)
 	{
+		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
 
@@ -410,6 +383,7 @@ int CCamera::RecordInfoSmallImage(DWORD dwCarID,
 
 	if (NULL == m_Result)
 	{
+		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
 
@@ -458,6 +432,7 @@ int CCamera::RecordInfoBinaryImage(DWORD dwCarID,
 
 	if (NULL == m_Result)
 	{
+		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
 
@@ -511,7 +486,7 @@ int CCamera::GetEncoderClsid( const WCHAR* format, CLSID* pClsid )
 		}    
 	}
 	free(pImageCodecInfo);
-	return -1;
+	return 0;
 }
 
 
@@ -639,6 +614,10 @@ DWORD WINAPI StatusCheckThread(LPVOID lpParam)
 	DWORD dwStatus = -1;
 	while(!pThis->m_bStatusCheckThreadExit)
 	{
+		if(pThis->m_bStatusCheckThreadExit)
+		{
+			break;
+		}
 		if ( HVAPI_GetConnStatusEx(pThis->m_hDevice, CONN_TYPE_RECORD, &dwStatus) == S_OK )
 		{
 			if (dwStatus == CONN_STATUS_NORMAL 
@@ -1083,8 +1062,6 @@ int CCamera::DisConnect()
 }
 int CCamera::CloseDevice()
 {
-	DisConnect();
-
 	m_bStatusCheckThreadExit = true;	
 
 	//Sleep(1000);
@@ -1094,9 +1071,12 @@ int CCamera::CloseDevice()
 
 	if (m_hStatusCheckThread != NULL)
 	{
+		TerminateThread(m_hStatusCheckThread, -1);
 		CloseHandle(m_hStatusCheckThread);
 		m_hStatusCheckThread = NULL;
 	}
+
+	DisConnect();
 	
 	//结束结果保存线程
 	while(m_ResultList.size()>0)
@@ -1276,7 +1256,7 @@ BOOL CCamera::MyResolveParamXml(char *pszXmlBuf, ParamValue *pParamValue)
 
 
 
-bool CCamera::saveImage(CameraResult* pRecord, int iSaveToNormalOrBackUp)
+bool CCamera::saveImage(CameraResult* pRecord)
 {
 	//思路：
 	//	1、将文件名设置为流水号
@@ -1308,55 +1288,50 @@ bool CCamera::saveImage(CameraResult* pRecord, int iSaveToNormalOrBackUp)
 		MakeSureDirectoryPathExists(strBackUpNormalFileName);
 		MakeSureDirectoryPathExists(strCacheNormalFileName);
 		
-		if (SAVE_TO_CACHE_DIRECTORY == iSaveToNormalOrBackUp)
+		//保存备份文件
+		CFile BackUpFile;
+		strBackUpNormalFileName.AppendFormat("%s.dat", pRecord->chListNo);
+		BOOL bOpenSuccess = BackUpFile.Open(strBackUpNormalFileName, CFile::modeCreate|CFile::modeWrite);
+		CArchive BpNormalArchive(&BackUpFile, CArchive::store);
+		pRecord->Serialize(BpNormalArchive);
+		BpNormalArchive.Close();
+		BackUpFile.Close();		
+		if (bOpenSuccess)
 		{
-			//保存缓存文件
-			CFile CacheNormalFile;
-			strCacheNormalFileName.AppendFormat("%s.dat", pRecord->chListNo);
-			BOOL bOpenSuccessCache = CacheNormalFile.Open(strCacheNormalFileName, CFile::modeCreate|CFile::modeWrite);
-			CArchive CacheNormalArchive(&CacheNormalFile, CArchive::store);
-			pRecord->Serialize(CacheNormalArchive);
-			CacheNormalArchive.Close();
-			CacheNormalFile.Close();
-			if (bOpenSuccessCache)
-			{
-				char chSaveImageLog3[MAX_PATH] = {0};
-				sprintf(chSaveImageLog3, "流水 %s 缓存文件数据保存成功", pRecord->chListNo);
-				WriteLog(chSaveImageLog3);
-			}
-			else
-			{
-				char chSaveImageLog4[MAX_PATH] = {0};
-				sprintf(chSaveImageLog4, "流水 %s 缓存文件数据保存失败", pRecord->chListNo);
-				WriteLog(chSaveImageLog4);
-			}
+			char chSaveImageLog1[MAX_PATH] = {0};
+			sprintf(chSaveImageLog1, "流水 %s 备份文件数据保存成功", pRecord->chListNo);
+			WriteLog(chSaveImageLog1);
+		}
+		else
+		{
+			char chSaveImageLog2[MAX_PATH] = {0};
+			sprintf(chSaveImageLog2, "流水 %s 备份文件数据保存失败", pRecord->chListNo);
+			WriteLog(chSaveImageLog2);
 		}
 
-		if (SAVE_TO_BACKUP_DIRECTORY == iSaveToNormalOrBackUp)
-		{
-			//保存备份文件
-			CFile BackUpFile;
-			strBackUpNormalFileName.AppendFormat("%s.dat", pRecord->chListNo);
-			BOOL bOpenSuccess = BackUpFile.Open(strBackUpNormalFileName, CFile::modeCreate|CFile::modeWrite);
-			CArchive BpNormalArchive(&BackUpFile, CArchive::store);
-			pRecord->Serialize(BpNormalArchive);
-			BpNormalArchive.Close();
-			BackUpFile.Close();		
-			if (bOpenSuccess)
-			{
-				char chSaveImageLog1[MAX_PATH] = {0};
-				sprintf(chSaveImageLog1, "流水 %s 备份文件数据保存成功", pRecord->chListNo);
-				WriteLog(chSaveImageLog1);
-			}
-			else
-			{
-				char chSaveImageLog2[MAX_PATH] = {0};
-				sprintf(chSaveImageLog2, "流水 %s 备份文件数据保存失败", pRecord->chListNo);
-				WriteLog(chSaveImageLog2);
-			}
-		}		
-		
+		//保存缓存文件
+		//CFile CacheNormalFile;
+		//strCacheNormalFileName.AppendFormat("%s.dat", pRecord->chListNo);
+		//BOOL bOpenSuccessCache = CacheNormalFile.Open(strCacheNormalFileName, CFile::modeCreate|CFile::modeWrite);
+		//CArchive CacheNormalArchive(&CacheNormalFile, CArchive::store);
+		//pRecord->Serialize(CacheNormalArchive);
+		//CacheNormalArchive.Close();
+		//CacheNormalFile.Close();
+		//if (bOpenSuccessCache)
+		//{
+		//	char chSaveImageLog3[MAX_PATH] = {0};
+		//	sprintf(chSaveImageLog3, "流水 %s 缓存文件数据保存成功", pRecord->chListNo);
+		//	WriteLog(chSaveImageLog3);
+		//}
+		//else
+		//{
+		//	char chSaveImageLog4[MAX_PATH] = {0};
+		//	sprintf(chSaveImageLog4, "流水 %s 缓存文件数据保存失败", pRecord->chListNo);
+		//	WriteLog(chSaveImageLog4);
+
+		//}
 	}
+
 
 	if (m_bMidDbEnable)
 	{
@@ -1366,54 +1341,47 @@ bool CCamera::saveImage(CameraResult* pRecord, int iSaveToNormalOrBackUp)
 		MakeSureDirectoryPathExists(strBackUpMidFileName);
 		MakeSureDirectoryPathExists(strCacheMidFileName);
 
-		if (SAVE_TO_CACHE_DIRECTORY == iSaveToNormalOrBackUp)
+		//保存中间库备份文件
+		CFile BackUpMidFile;
+		strBackUpMidFileName.AppendFormat("%s.dat", pRecord->chListNo);
+		BOOL bOpenMidSuccess = BackUpMidFile.Open(strBackUpMidFileName, CFile::modeCreate|CFile::modeWrite);
+		CArchive BpMidArchive(&BackUpMidFile, CArchive::store);
+		pRecord->Serialize(BpMidArchive);
+		BpMidArchive.Close();
+		BackUpMidFile.Close();
+		if (bOpenMidSuccess)
 		{
-			//保存中间库缓存文件
-			CFile CacheMidFile;
-			strCacheMidFileName.AppendFormat("%s.dat", pRecord->chListNo);
-			BOOL bOpenMidSuccessCache = CacheMidFile.Open(strCacheMidFileName, CFile::modeCreate|CFile::modeWrite);
-			CArchive CacheMidArchive(&CacheMidFile, CArchive::store);
-			pRecord->Serialize(CacheMidArchive);
-			CacheMidArchive.Close();
-			CacheMidFile.Close();
-			if (bOpenMidSuccessCache)
-			{
-				char chSaveImageLog7[MAX_PATH] = {0};
-				sprintf(chSaveImageLog7, "流水 %s 缓存中间库文件保存失成功", pRecord->chListNo);
-				WriteLog(chSaveImageLog7);
-			}
-			else
-			{
-				char chSaveImageLog8[MAX_PATH] = {0};
-				sprintf(chSaveImageLog8, "流水 %s 缓存中间库文件保存失败", pRecord->chListNo);
-				WriteLog(chSaveImageLog8);
-			}
+			char chSaveImageLog5[MAX_PATH] = {0};
+			sprintf(chSaveImageLog5, "流水 %s 备份中间库文件数据保存成功", pRecord->chListNo);
+			WriteLog(chSaveImageLog5);
+		}
+		else
+		{
+			char chSaveImageLog6[MAX_PATH] = {0};
+			sprintf(chSaveImageLog6, "流水 %s 备份中间库文件数据保存失败", pRecord->chListNo);
+			WriteLog(chSaveImageLog6);
 		}
 
-		if (SAVE_TO_BACKUP_DIRECTORY == iSaveToNormalOrBackUp)
-		{
-			//保存中间库备份文件
-			CFile BackUpMidFile;
-			strBackUpMidFileName.AppendFormat("%s.dat", pRecord->chListNo);
-			BOOL bOpenMidSuccess = BackUpMidFile.Open(strBackUpMidFileName, CFile::modeCreate|CFile::modeWrite);
-			CArchive BpMidArchive(&BackUpMidFile, CArchive::store);
-			pRecord->Serialize(BpMidArchive);
-			BpMidArchive.Close();
-			BackUpMidFile.Close();
-			if (bOpenMidSuccess)
-			{
-				char chSaveImageLog5[MAX_PATH] = {0};
-				sprintf(chSaveImageLog5, "流水 %s 备份中间库文件数据保存成功", pRecord->chListNo);
-				WriteLog(chSaveImageLog5);
-			}
-			else
-			{
-				char chSaveImageLog6[MAX_PATH] = {0};
-				sprintf(chSaveImageLog6, "流水 %s 备份中间库文件数据保存失败", pRecord->chListNo);
-				WriteLog(chSaveImageLog6);
-			}
-		}
-
+		//保存中间库缓存文件
+		//CFile CacheMidFile;
+		//strCacheMidFileName.AppendFormat("%s.dat", pRecord->chListNo);
+		//BOOL bOpenMidSuccessCache = CacheMidFile.Open(strCacheMidFileName, CFile::modeCreate|CFile::modeWrite);
+		//CArchive CacheMidArchive(&CacheMidFile, CArchive::store);
+		//pRecord->Serialize(CacheMidArchive);
+		//CacheMidArchive.Close();
+		//CacheMidFile.Close();
+		//if (bOpenMidSuccessCache)
+		//{
+		//	char chSaveImageLog7[MAX_PATH] = {0};
+		//	sprintf(chSaveImageLog7, "流水 %s 缓存中间库文件保存失成功", pRecord->chListNo);
+		//	WriteLog(chSaveImageLog7);
+		//}
+		//else
+		//{
+		//	char chSaveImageLog8[MAX_PATH] = {0};
+		//	sprintf(chSaveImageLog8, "流水 %s 缓存中间库文件保存失败", pRecord->chListNo);
+		//	WriteLog(chSaveImageLog8);
+		//}
 	}
 
 	return true;
@@ -1427,6 +1395,7 @@ int CCamera::SyncTime( const CTime& tmTime )
 	{
 		return -1;
 	}
+	WriteLog("时间同步开始");
 
 	char chTemp[256]={ 0 };
 	sprintf(chTemp, "SetTime,Date[%d.%02d.%02d],Time[%02d:%02d:%02d]", 
@@ -1459,7 +1428,7 @@ int CCamera::SyncTime( const CTime& tmTime )
 			WriteLog(chSynTimeLogBuf3);
 		}
 	}
-
+	WriteLog("时间同步结束");
 	return 0;
 }
 
@@ -1509,6 +1478,11 @@ int CCamera::SaveResultThreadFunction()
 {
 	while(!m_bExit)
 	{
+		if (m_bExit)
+		{
+			WriteLog("Leave SaveResultThreadFunction.");
+			break;
+		}
 		if ( WaitForSingleObject(m_hSemaphore, 2000) != WAIT_OBJECT_0 )
 		{
 			continue;
@@ -1522,7 +1496,6 @@ int CCamera::SaveResultThreadFunction()
 			continue;
 		 // 保存结果
 		//saveImage(tempResult);
-		//saveImage(tempResult, SAVE_TO_BACKUP_DIRECTORY);  //注释于2015-07-20
 
 		if (NULL != tempResult)
 		{
@@ -1530,10 +1503,9 @@ int CCamera::SaveResultThreadFunction()
 			if (m_bDbEnable)
 			{				
 				WriteLog("从缓存队列中取出数据，加入本地数据库队列");
-				
-				EnterCriticalSection(g_csLocalCriticalSection);
-				CameraResult *tempLocalResult =NULL;
+				CameraResult *tempLocalResult =NULL;							
 				tempLocalResult = new CameraResult(*tempResult);
+				EnterCriticalSection(g_csLocalCriticalSection);	
 				if(NULL != tempLocalResult)
 				{
 					g_lsLocalData->push_back(tempLocalResult);
@@ -1543,11 +1515,10 @@ int CCamera::SaveResultThreadFunction()
 
 			if (m_bMidDbEnable)
 			{
-				WriteLog("从缓存队列中取出数据，加入中间数据库队列");
-
-				EnterCriticalSection(g_csRemoteCriticalSection);
+				WriteLog("从缓存队列中取出数据，加入中间数据库队列");				
 				CameraResult *tempRemoteResult = NULL;
 				tempRemoteResult =new CameraResult(*tempResult);
+				EnterCriticalSection(g_csRemoteCriticalSection);
 				if (NULL != tempRemoteResult)
 				{
 					g_lsRemoteData->push_back(tempRemoteResult);
@@ -2069,10 +2040,7 @@ bool CCamera::SetListAndMutex( list<CameraResult*>* localList, HANDLE* localMute
 	return true;
 }
 
-bool CCamera::SetListAndCriticalSection( list<CameraResult*>* localList, CRITICAL_SECTION* localCriticalSection,
-										list<CameraResult*>* RemoteList, CRITICAL_SECTION* remoteCriticalSection,
-										list<CameraResult*>* BackUplocalList, CRITICAL_SECTION* BackUplocalCriticalSection,
-										list<CameraResult*>* BackUpRemoteList, CRITICAL_SECTION* BackUpRemoteCriticalSection)
+bool CCamera::SetListAndCriticalSection( list<CameraResult*>* localList, CRITICAL_SECTION* localCriticalSection, list<CameraResult*>* RemoteList, CRITICAL_SECTION* remoteCriticalSection )
 {
 	if (NULL == localList || NULL ==localCriticalSection || NULL == RemoteList || NULL == remoteCriticalSection)
 	{
@@ -2083,11 +2051,5 @@ bool CCamera::SetListAndCriticalSection( list<CameraResult*>* localList, CRITICA
 	g_lsRemoteData = RemoteList;
 	g_csRemoteCriticalSection = remoteCriticalSection;
 
-	//------------添加于2015年6月5日---------为了不丢数据-------begin--
-	g_lsBackUpLocalData = BackUplocalList;
-	g_lsBackUpRemoteData = BackUpRemoteList;
-	g_csBackUpLocalCriticalSection = BackUplocalCriticalSection;
-	g_csBackUpRemoteCriticalSection = BackUpRemoteCriticalSection;
-	//------------添加于2015年6月5日---------为了不丢数据-------end--
 	return true;
 }

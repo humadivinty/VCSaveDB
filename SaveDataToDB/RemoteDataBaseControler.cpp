@@ -133,7 +133,10 @@ HRESULT RemoteDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 		}
 		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strErrorMessage,"3121"))
 		{
-			m_pConnectionPtr->Close();
+			if (adStateOpen == m_pConnectionPtr->GetState())
+			{
+				m_pConnectionPtr->Close();
+			}
 		}
 		//Sleep(5*1000);
 	}
@@ -206,7 +209,10 @@ HRESULT RemoteDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevi
 
 		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strErrorMessage,"3121") )
 		{
-			m_pConnectionPtr->Close();
+			if (adStateOpen == m_pConnectionPtr->GetState())
+			{
+				m_pConnectionPtr->Close();
+			}
 		}
 		//Sleep(5*1000);
 	}	

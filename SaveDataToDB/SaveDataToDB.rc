@@ -151,13 +151,13 @@ BEGIN
         BLOCK "080403a8"
         BEGIN
             VALUE "CompanyName", "TODO: <公司名>"
-            VALUE "FileDescription", "广东高清卡口入库程序"
-            VALUE "FileVersion", "1.0.0.5-2015-07-21-01"
+            VALUE "FileDescription", "TODO: <文件说明>"
+            VALUE "FileVersion", "1.0.0.5-2015-07-23-03"
             VALUE "InternalName", "SaveDataToDB.exe"
             VALUE "LegalCopyright", "TODO: (C) <公司名>。保留所有权利。"
             VALUE "OriginalFilename", "SaveDataToDB.exe"
-            VALUE "ProductName", "SaveDataToDB"
-            VALUE "ProductVersion", "1.0.0.5-2015-07-21-01"
+            VALUE "ProductName", "TODO: <产品名>"
+            VALUE "ProductVersion", "1.0.0.5-2015-07-23-03"
         END
     END
     BLOCK "VarFileInfo"
@@ -187,7 +187,6 @@ BEGIN
     IDD_SAVEDATATODB_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 726
         VERTGUIDE, 133
         VERTGUIDE, 264
         VERTGUIDE, 270

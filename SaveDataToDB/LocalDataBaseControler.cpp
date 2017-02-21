@@ -64,7 +64,7 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 			char chReConnectInfo[256] = {0};
 			hr =ConnectToDB(chReConnectInfo);
 			char chBigImgConnectInfo[MAX_PATH] = {0};
-			if (FAILED(hr))
+			if (S_OK != hr)
 			{
 				sprintf(chBigImgConnectInfo, "SaveBigImageToDB:: 重连失败：%s", chReConnectInfo);
 				LocalDBWriteLog(chBigImgConnectInfo);
@@ -102,6 +102,7 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 			strLog.Format("SaveBigImageToDB:::[%d]图片数据插入失败", GetCurrentThreadId());
 			hr=S_FALSE;
 			LocalDBWriteLog(str.GetBuffer());
+			str.ReleaseBuffer();
 		}
 		pRecordset->MoveNext();
 
@@ -120,6 +121,7 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 		strErrorMessage.Format("SaveBigImageToDB::保存图片失败！错误信息:%s 错误码:%d,  错误描述：%s, ListNo = %s", e.ErrorMessage(), GetLastError(), (char*)e.Description(), ListNo);
 		LocalDBWriteLog(strErrorMessage.GetBuffer());
 		LocalDBWriteLog(e.Description());
+		strErrorMessage.ReleaseBuffer();
 		
 		CString strError="IDispatch error #3092";
 		if(strError==e.ErrorMessage())
@@ -139,7 +141,10 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strError,"3121"))
 		{
 			LocalDBWriteLog("SaveBigImageToDB::查询超时");
-			m_pConnectionPtr->Close();
+			if (adStateOpen == m_pConnectionPtr->GetState())
+			{
+				m_pConnectionPtr->Close();
+			}
 		}
 		//Sleep(5*1000);
 		//exit(0);
@@ -163,7 +168,7 @@ HRESULT LocalDataBaseControler::SaveSmallImageToDB( unsigned char* pImage, char*
 			char chReConnectInfo[256] = {0};
 			hr =ConnectToDB(chReConnectInfo);
 			char chSmallImgConnectInfo[MAX_PATH] = {0};
-			if (FAILED(hr))
+			if (S_OK != hr)
 			{
 				sprintf(chSmallImgConnectInfo,"SaveNormalDataToDB:: 重连失败：%s", chReConnectInfo);
 				LocalDBWriteLog(chSmallImgConnectInfo);
@@ -201,6 +206,7 @@ HRESULT LocalDataBaseControler::SaveSmallImageToDB( unsigned char* pImage, char*
 			str.Format("SaveSmallImageToDB:[%d]保存数据失败", GetCurrentThreadId());
 			hr=S_FALSE;
 			LocalDBWriteLog(str.GetBuffer());
+			str.ReleaseBuffer();
 		}
 		pRecordset->MoveNext();
 
@@ -220,6 +226,7 @@ HRESULT LocalDataBaseControler::SaveSmallImageToDB( unsigned char* pImage, char*
 		strErrorMessage.Format("SaveSmallImageToDB::保存图片失败！错误信息:%s 错误码:%d,  错误描述：%s, ListNo = %s", e.ErrorMessage(), GetLastError(), (char*)e.Description(), ListNo);
 		LocalDBWriteLog(strErrorMessage.GetBuffer());
 		LocalDBWriteLog(e.Description());
+		strErrorMessage.ReleaseBuffer();
 		
 		CString strError="IDispatch error #3092";
 		if(strError==e.ErrorMessage())
@@ -232,7 +239,10 @@ HRESULT LocalDataBaseControler::SaveSmallImageToDB( unsigned char* pImage, char*
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strError,"3121"))
 		{
 			LocalDBWriteLog("SaveSmallImageToDB::查询超时");
-			m_pConnectionPtr->Close();
+			if (adStateOpen == m_pConnectionPtr->GetState())
+			{
+				m_pConnectionPtr->Close();
+			}
 		}
 		//Sleep(5*1000);
 		//exit(0);
@@ -254,7 +264,7 @@ HRESULT LocalDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevic
 			char chReConnectInfo[256] = {0};
 			hr =ConnectToDB(chReConnectInfo);
 			char  chStatusConnectInfo[MAX_PATH] = {0};
-			if (FAILED(hr))
+			if (S_OK != hr)
 			{
 				sprintf(chStatusConnectInfo, "SaveDeviceStatusToDB:: 重连失败：%s", chReConnectInfo);
 				LocalDBWriteLog(chStatusConnectInfo);
@@ -303,7 +313,10 @@ HRESULT LocalDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevic
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strErrorMessage,"3121") )
 		{
 			LocalDBWriteLog("SaveDeviceStatusToDB:: 查询超时");
-			m_pConnectionPtr->Close();
+			if (adStateOpen == m_pConnectionPtr->GetState())
+			{
+				m_pConnectionPtr->Close();
+			}
 		}
 		//Sleep(5*1000);
 	}
@@ -394,7 +407,10 @@ HRESULT LocalDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strErrorMessage,"3121"))
 		{
 			LocalDBWriteLog("SaveNormalDataToDB，查询超时");
-			m_pConnectionPtr->Close();
+			if (adStateOpen == m_pConnectionPtr->GetState())
+			{
+				m_pConnectionPtr->Close();
+			}
 		}
 		//Sleep(5*1000);
 	}
@@ -455,7 +471,7 @@ HRESULT LocalDataBaseControler::InitCameraGroup( CCamera** CameraGroup )
 		char chReConnectInfo[256] = {0};
 		char chConnectLogInfo[256] = {0};
 		HResult =ConnectToDB(chReConnectInfo);
-		if (FAILED(HResult))
+		if (S_OK != HResult )
 		{
 			sprintf(chConnectLogInfo, "InitCameraGroup:: 重连失败：%s",chReConnectInfo);
 			LocalDBWriteLog(chConnectLogInfo);
@@ -470,17 +486,23 @@ HRESULT LocalDataBaseControler::InitCameraGroup( CCamera** CameraGroup )
 	try
 	{
 		_RecordsetPtr pCameraSetRecord = NULL;
-		if (FAILED(pCameraSetRecord.CreateInstance(__uuidof(Recordset))))
+		if (S_OK != pCameraSetRecord.CreateInstance(__uuidof(Recordset)) )
 		{
 			//数据集创建失败
 			HResult = S_FALSE;	
 			return HResult;
 		}
-		pCameraSetRecord->Open((const _variant_t)("select * from  Hve_Addr"), 
+		HRESULT hrOpen = S_FALSE;
+		hrOpen = pCameraSetRecord->Open((const _variant_t)("select * from  Hve_Addr"), 
 			(_variant_t)((IDispatch *)m_pConnectionPtr),
 			adOpenKeyset,
 			adLockOptimistic,
 			adCmdText);
+
+		if (S_OK != hrOpen)
+		{
+			return S_FALSE;
+		}
 		pCameraSetRecord->MoveFirst();
 
 		while(VARIANT_FALSE == pCameraSetRecord->adoEOF)
@@ -501,10 +523,13 @@ HRESULT LocalDataBaseControler::InitCameraGroup( CCamera** CameraGroup )
 			strKKInfo2.TrimRight();
 
 			(*CameraGroup) = new (std::nothrow) CCamera(strHveAddr.GetBuffer());
+			strHveAddr.ReleaseBuffer();
 			if (NULL != (*CameraGroup))
 			{
 				sprintf((*CameraGroup)->m_chDBKKInfo1, "%s", strKKInfo1.GetBuffer());
+				strKKInfo1.ReleaseBuffer();
 				sprintf((*CameraGroup)->m_chDBKKInfo2, "%s", strKKInfo2.GetBuffer());
+				strKKInfo2.ReleaseBuffer();
 				(*CameraGroup)->m_iDirectionNo = nDirection;
 				(*CameraGroup)->m_iDiviceID = nDevicID;
 				(*CameraGroup)->m_iRoadCount = nRoadCount;
@@ -526,6 +551,7 @@ HRESULT LocalDataBaseControler::InitCameraGroup( CCamera** CameraGroup )
 		CString strLog;
 		strLog.Format("InitCameraGroup::初始化设备失败,错误信息:%s, 错误描述：%s",e.ErrorMessage(), (char*)e.Description());		
 		LocalDBWriteLog(strLog.GetBuffer());
+		strLog.ReleaseBuffer();
 	}
 	return HResult;
 }

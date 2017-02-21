@@ -53,7 +53,7 @@ HRESULT BaseDataBaseControl::ConnectToDB(char* ConnectInfo)
 		if (NULL != m_pConnectionPtr)
 		{
 			hr = CloseDBConnect();
-			Sleep(5* 1000);
+			//Sleep(5* 1000);
 		}
 		EnterCriticalSection(&m_csConnect);		
 		hr = m_pConnectionPtr.CreateInstance(_uuidof(Connection));
@@ -91,7 +91,6 @@ HRESULT BaseDataBaseControl::ConnectToDB(char* ConnectInfo)
 		char errorInfo[MAX_PATH] = {0};
 		sprintf(errorInfo,"数据库连接失败, 错误信息：%s, 错误描述：%s ",e.ErrorMessage(), (char*)e.Description());
 		memcpy(ConnectInfo, errorInfo, strlen(errorInfo));
-		Sleep(5*1000);
 	}
 	return hr;
 }
