@@ -131,11 +131,11 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 			//AfxMessageBox("SaveBigImageToDB::sql执行语句有语法错误",0,0);
 		}
 
-		//if(strstr(strError,"3121"))
-		//{
-		//	LocalDBWriteLog("SaveBigImageToDB::查询超时");
-		//	//exit(0);
-		//}
+		if(strstr(strErrorMessage,"存储空间不足"))
+		{
+			LocalDBWriteLog("SaveBigImageToDB::存储空间不足 退出");
+			exit(1);
+		}
 		LocalDBWriteLog("SaveBigImageToDB::睡5秒钟");
 
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strError,"3121"))
