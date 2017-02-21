@@ -264,12 +264,14 @@ void CSaveDataToDBDlg::SaveLocal( void )
 			{
 				//ReleaseMutex(m_hSaveLocal);		//2015-01-19
 				LeaveCriticalSection(&m_csSaveLocal);
+				Sleep(50);
 				continue;
 			}
 			if (strlen(tempResult->chListNo)< 0)
 			{
 				//ReleaseMutex(m_hSaveLocal);		//2015-01-19
 				LeaveCriticalSection(&m_csSaveLocal);
+				Sleep(50);
 				continue;
 			}
 			strLocalFilePath.Format("%s\\%s.dat", m_strLocalFilePath, tempResult->chListNo);
@@ -286,6 +288,7 @@ void CSaveDataToDBDlg::SaveLocal( void )
 			}
 			//ReleaseMutex(m_hSaveLocal);		//2015-01-19
 			LeaveCriticalSection(&m_csSaveLocal);
+			Sleep(50);
 		}
 		else
 		{
@@ -422,12 +425,14 @@ void CSaveDataToDBDlg::SaveRemote( void )
 			{				
 				//ReleaseMutex(m_hSaveRemote);		//2015-01-19
 				LeaveCriticalSection(&m_csSaveRemote);
+				Sleep(50);
 				continue;
 			}
 			if (strlen(tempResult->chListNo) < 0)
 			{
 				//ReleaseMutex(m_hSaveRemote);		//2015-01-19
 				LeaveCriticalSection(&m_csSaveRemote);
+				Sleep(50);
 				continue;
 			}
 			strRemoteFilePath.Format("%s\\%s.dat", m_strRemoteFilePath, tempResult->chListNo);
@@ -445,6 +450,7 @@ void CSaveDataToDBDlg::SaveRemote( void )
 			}
 			//ReleaseMutex(m_hSaveRemote);				//2015-01-19
 			LeaveCriticalSection(&m_csSaveRemote);
+			Sleep(50);
 		}
 		else
 		{
@@ -578,7 +584,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 		EnterCriticalSection(&m_csReadLocal);
 		if (m_lsReadLocal.size() > 0)
 		{
-			Sleep(60);
+			
 			CameraResult* tempResult = NULL;
 			tempResult = m_lsReadLocal.front();
 			m_lsReadLocal.pop_front();
@@ -587,6 +593,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 			{
 				WriteDlgLog("获取的结果为NULL");
 				LeaveCriticalSection(&m_csReadLocal);
+				Sleep(60);
 				continue;
 			}
 
@@ -652,6 +659,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				LeaveCriticalSection(&m_csSaveLocal);
 			}
 			LeaveCriticalSection(&m_csReadLocal);
+			Sleep(60);
 		}
 		else
 		{
@@ -690,7 +698,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 		EnterCriticalSection(&m_csReadRemote);
 		if (m_lsReadRemote.size() > 0)
 		{
-			Sleep(60);
+			
 			CameraResult* tempResult = m_lsReadRemote.front();
 			m_lsReadRemote.pop_front();
 
@@ -698,6 +706,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 			{
 				WriteDlgRemotLog("获取的结果为NULL");
 				LeaveCriticalSection(&m_csReadRemote);
+				Sleep(60);
 				continue;
 			}
 
@@ -731,6 +740,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 				//ReleaseMutex(m_hReadRemote);				//2015-01-19
 			}
 			LeaveCriticalSection(&m_csReadRemote);
+			Sleep(60);
 		}
 		else
 		{
