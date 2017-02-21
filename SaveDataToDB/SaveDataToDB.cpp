@@ -35,7 +35,7 @@ CSaveDataToDBApp theApp;
 
 BOOL CSaveDataToDBApp::InitInstance()
 {
-	::CreateMutex(NULL, TRUE, "SaceDataToDB");
+	::CreateMutex(NULL, TRUE, "SaveDataToDB");
 	if(ERROR_ALREADY_EXISTS == GetLastError())
 	{
 		AfxMessageBox("该程序已经运行,请先关闭运行中的程序再打开！");

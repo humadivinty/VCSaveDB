@@ -91,9 +91,11 @@ HRESULT RemoteDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 		GetLocalTime(&st);
 		char szTimeFlag[256]={0};
 		sprintf(szTimeFlag, "%d-%02d-%02d %02d:%02d:%02d:%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);	
-
-		sprintf(chColumns, "%s", "ListNo, DeviceID, LaneNo, Optime, DirectionNo, VehPlate, VehPlateManual, VehPlateSoft, PlateColorNo, VehSpeed, VehBodyColorNo, VehBodyDeepNo, VehTypeNo, PlateTypeNo, TimeFlag");
-		sprintf(chValues, "('%s',%d,%d,'%s',%d,'%s','%s','%s',%d,%d,%d,%d,%d,%d,'%s')",
+		
+		//修改于 2016-07-14 应ldq要求，取消TimeFlag的插入,由系统自动生成
+		//sprintf(chColumns, "%s", "ListNo, DeviceID, LaneNo, Optime, DirectionNo, VehPlate, VehPlateManual, VehPlateSoft, PlateColorNo, VehSpeed, VehBodyColorNo, VehBodyDeepNo, VehTypeNo, PlateTypeNo, TimeFlag");
+		sprintf(chColumns, "%s", "ListNo, DeviceID, LaneNo, Optime, DirectionNo, VehPlate, VehPlateManual, VehPlateSoft, PlateColorNo, VehSpeed, VehBodyColorNo, VehBodyDeepNo, VehTypeNo, PlateTypeNo");
+		sprintf(chValues, "('%s',%d,%d,'%s',%d,'%s','%s','%s',%d,%d,%d,%d,%d,%d)",
 			pRecord->chListNo,
 			pRecord->iDeviceID,
 			pRecord->iLaneNo,
@@ -107,8 +109,8 @@ HRESULT RemoteDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 			pRecord->iVehBodyColorNo,
 			pRecord->iVehBodyDeepNo,
 			pRecord->iVehTypeNo,
-			pRecord->iPlateTypeNo,
-			szTimeFlag);
+			pRecord->iPlateTypeNo
+			/*szTimeFlag*/);
 		sprintf(chCmdText, "INSERT INTO %s(%s)VALUES %s", "HDVEHICLELIST", chColumns, chValues);
 
 		m_pConnectionPtr->Execute(_bstr_t(chCmdText), &RecordAffected, adCmdText);
@@ -133,10 +135,20 @@ HRESULT RemoteDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 		}
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strErrorMessage,"3121"))
 		{
-			if (adStateOpen == m_pConnectionPtr->GetState())
-			{
-				m_pConnectionPtr->Close();
-			}
+
+				try
+				{
+					if (adStateOpen == m_pConnectionPtr->GetState())
+					{
+						m_pConnectionPtr->Close();
+					}
+				}
+				catch (_com_error &e)
+				{
+					RemoteDBWriteLog("SaveNormalDataToDB，关闭数据库产生异常.");
+				}
+				//m_pConnectionPtr->Close();
+			
 		}
 		//Sleep(5*1000);
 	}
@@ -209,10 +221,18 @@ HRESULT RemoteDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevi
 
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strErrorMessage,"3121") )
 		{
-			if (adStateOpen == m_pConnectionPtr->GetState())
+			try
 			{
-				m_pConnectionPtr->Close();
+				if (adStateOpen == m_pConnectionPtr->GetState())
+				{
+					m_pConnectionPtr->Close();
+				}
 			}
+			catch (_com_error &e)
+			{
+				RemoteDBWriteLog("SaveDeviceStatusToDB, 数据库关闭异常.");
+			}
+
 		}
 		//Sleep(5*1000);
 	}	

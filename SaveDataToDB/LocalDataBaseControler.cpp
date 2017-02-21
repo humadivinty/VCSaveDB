@@ -141,10 +141,21 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strError,"3121"))
 		{
 			LocalDBWriteLog("SaveBigImageToDB::查询超时");
-			if (adStateOpen == m_pConnectionPtr->GetState())
+			try
 			{
-				m_pConnectionPtr->Close();
+				if (adStateOpen == m_pConnectionPtr->GetState())
+				{
+					m_pConnectionPtr->Close();
+				}
 			}
+			catch(_com_error e)
+			{
+				LocalDBWriteLog("SaveBigImageToDB::关闭数据库异常.");
+			}
+			//if (adStateOpen == m_pConnectionPtr->GetState())
+			//{
+			//	m_pConnectionPtr->Close();
+			//}
 		}
 		//Sleep(5*1000);
 		//exit(0);
@@ -239,10 +250,21 @@ HRESULT LocalDataBaseControler::SaveSmallImageToDB( unsigned char* pImage, char*
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strError,"3121"))
 		{
 			LocalDBWriteLog("SaveSmallImageToDB::查询超时");
-			if (adStateOpen == m_pConnectionPtr->GetState())
+			try
 			{
-				m_pConnectionPtr->Close();
+				if (adStateOpen == m_pConnectionPtr->GetState())
+				{
+					m_pConnectionPtr->Close();
+				}
 			}
+			catch(_com_error e)
+			{
+				LocalDBWriteLog("SaveSmallImageToDB::关闭数据库异常.");
+			}
+			//if (adStateOpen == m_pConnectionPtr->GetState())
+			//{
+			//	m_pConnectionPtr->Close();
+			//}
 		}
 		//Sleep(5*1000);
 		//exit(0);
@@ -313,10 +335,21 @@ HRESULT LocalDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevic
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strErrorMessage,"3121") )
 		{
 			LocalDBWriteLog("SaveDeviceStatusToDB:: 查询超时");
-			if (adStateOpen == m_pConnectionPtr->GetState())
+			try
 			{
-				m_pConnectionPtr->Close();
+				if (adStateOpen == m_pConnectionPtr->GetState())
+				{
+					m_pConnectionPtr->Close();
+				}
 			}
+			catch(_com_error e)
+			{
+				LocalDBWriteLog("SaveDeviceStatusToDB::关闭数据库异常.");
+			}
+			//if (adStateOpen == m_pConnectionPtr->GetState())
+			//{
+			//	m_pConnectionPtr->Close();
+			//}
 		}
 		//Sleep(5*1000);
 	}
@@ -407,10 +440,21 @@ HRESULT LocalDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 		if (strstr(strErrorMessage,"一般性网络错误") || strstr(strErrorMessage,"超时") || strstr(strErrorMessage,"3121"))
 		{
 			LocalDBWriteLog("SaveNormalDataToDB，查询超时");
-			if (adStateOpen == m_pConnectionPtr->GetState())
+			try
 			{
-				m_pConnectionPtr->Close();
+				if (adStateOpen == m_pConnectionPtr->GetState())
+				{
+					m_pConnectionPtr->Close();
+				}
 			}
+			catch(_com_error e)
+			{
+				LocalDBWriteLog("SaveNormalDataToDB::关闭数据库异常.");
+			}
+			//if (adStateOpen == m_pConnectionPtr->GetState())
+			//{
+			//	m_pConnectionPtr->Close();
+			//}
 		}
 		//Sleep(5*1000);
 	}

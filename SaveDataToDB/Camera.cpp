@@ -142,6 +142,10 @@ int CCamera::RecordInfoBegin(DWORD dwCarID)
 	{		
 		m_bResultComplete = false;
 
+		if (m_Result != NULL)
+		{
+			delete m_Result;
+		}
 		m_Result = NULL;
 		m_Result = new CameraResult();
 
@@ -876,6 +880,13 @@ void CCamera::AnalyseRecord(CameraResult* record)
 	sprintf(record->chVehPlateSoft,"%d", 1);
 	sprintf(record->chVehPlateManual,"%d", 0);
 	record->iDeviceID = m_iDiviceID;
+
+	//2015-10-26 ÐÂÔö
+	if (NULL != record->pcAppendInfo)
+	{
+		delete [] record->pcAppendInfo;
+		record->pcAppendInfo = NULL;
+	}
 }
 int CCamera::Connect()
 {

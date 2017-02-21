@@ -152,12 +152,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "TODO: <公司名>"
             VALUE "FileDescription", "TODO: <文件说明>"
-            VALUE "FileVersion", "1.0.0.5-2015-08-18-01"
+            VALUE "FileVersion", "1.0.0.5-2016-07-14-01"
             VALUE "InternalName", "SaveDataToDB.exe"
             VALUE "LegalCopyright", "TODO: (C) <公司名>。保留所有权利。"
             VALUE "OriginalFilename", "SaveDataToDB.exe"
             VALUE "ProductName", "TODO: <产品名>"
-            VALUE "ProductVersion", "1.0.0.5-2015-08-18-01"
+            VALUE "ProductVersion", "1.0.0.5-2016-07-14-01"
         END
     END
     BLOCK "VarFileInfo"

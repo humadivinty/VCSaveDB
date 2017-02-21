@@ -309,7 +309,7 @@ void CSaveDataToDBDlg::SaveLocal( void )
 	CString strLocalFilePath;
 	while(!m_bSaveLocalThreadExit)
 	{
-		__try
+//		__try
 		{
 			char chSaveLocalListCount[260] = {0};
 			sprintf(chSaveLocalListCount, "Current SaveLocal List count = %d", m_lsSaveLocal.size());
@@ -376,11 +376,11 @@ void CSaveDataToDBDlg::SaveLocal( void )
 				Sleep(2000);
 			}
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
-		{
-			WriteDlgLog("SaveLocal 异常");
-			exit(1);
-		}
+		//__except(EXCEPTION_EXECUTE_HANDLER)
+		//{
+		//	WriteDlgLog("SaveLocal 异常");
+		//	exit(1);
+		//}
 		
 	}
 	return;
@@ -402,7 +402,7 @@ void CSaveDataToDBDlg::ReadLocal( void )
 	CString strtmpFileName;
 	while(!m_bExit)
 	{
-		__try
+//		__try
 		{
 			WriteDlgLog("ReadLocal function begin.");
 			if (m_bExit)
@@ -498,11 +498,11 @@ void CSaveDataToDBDlg::ReadLocal( void )
 			finder.Close();
 			WriteDlgLog("ReadLocal function end.");
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
-		{
-			WriteDlgLog("ReadLocal 异常");
-			exit(1);
-		}		
+		//__except(EXCEPTION_EXECUTE_HANDLER)
+		//{
+		//	WriteDlgLog("ReadLocal 异常");
+		//	exit(1);
+		//}		
 	}
 	return;
 }
@@ -521,7 +521,7 @@ void CSaveDataToDBDlg::SaveRemote( void )
 	
 	while(!m_bSaveRemoteThreadExit)
 	{
-		__try
+//		__try
 		{
 			if (m_bSaveRemoteThreadExit)
 			{
@@ -586,11 +586,11 @@ void CSaveDataToDBDlg::SaveRemote( void )
 				Sleep(2000);
 			}
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
+/*		__except(EXCEPTION_EXECUTE_HANDLER)
 		{
 			WriteDlgLog("SaveRemote 异常，退出");
 			exit(1);
-		}		
+		}	*/	
 	}
 	return;
 }
@@ -611,7 +611,7 @@ void CSaveDataToDBDlg::ReadRemote( void )
 	CString strtmpFileName;
 	while(!m_bExit)
 	{
-		__try
+//		__try
 		{
 			WriteDlgRemotLog("ReadRemote begin.");
 			if (m_bExit)
@@ -666,6 +666,12 @@ void CSaveDataToDBDlg::ReadRemote( void )
 					theRemoteFile.Close();
 					DeleteFile(strtmpFileName);
 
+					if (NULL != tempResult)
+					{
+						delete tempResult;
+						tempResult = NULL;
+					}
+
 					char chLogBuf[256] = {0};
 					sprintf(chLogBuf, "%s数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
 					strtmpFileName.ReleaseBuffer();
@@ -707,11 +713,11 @@ void CSaveDataToDBDlg::ReadRemote( void )
 			finder.Close();
 			WriteDlgRemotLog("ReadRemote end.");
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
+/*		__except(EXCEPTION_EXECUTE_HANDLER)
 		{
 			WriteDlgLog("ReadRemote 异常");
 			exit(1);
-		}		
+		}	*/	
 	}
 	return;
 }
@@ -738,7 +744,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 
 	while(!m_bExit)
 	{
-		__try
+//		__try
 		{
 			if (m_bExit)
 			{
@@ -842,11 +848,11 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				Sleep(2000);
 			}
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
+/*		__except(EXCEPTION_EXECUTE_HANDLER)
 		{
 			WriteDlgLog("SaveLocalDB 异常，退出");
 			exit(1);
-		}		
+		}	*/	
 	}
 	LocalDB.CloseDBConnect();
 }
@@ -876,7 +882,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 
 	while(!m_bExit)
 	{
-		__try
+//		__try
 		{
 			if (m_bExit)
 			{
@@ -943,11 +949,11 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 				Sleep(2000);
 			}
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
-		{
-			WriteDlgLog("SaveRemoteDB 异常， 退出");
-			exit(1);
-		}
+		//__except(EXCEPTION_EXECUTE_HANDLER)
+		//{
+		//	WriteDlgLog("SaveRemoteDB 异常， 退出");
+		//	exit(1);
+		//}
 	}
 	RemoteDB.CloseDBConnect();
 }
@@ -1076,7 +1082,7 @@ unsigned __stdcall CSaveDataToDBDlg::ThreadCirclelaryDelete( void* TheParam )
 	pDlgThis->WriteDlgLog("环覆盖线程启动");
 	while(!pDlgThis->m_bExit)
 	{
-		__try
+//		__try
 		{
 			//获取备份文件所在盘符的根目录
 			string strBackupResult(pDlgThis->m_strBackUpResultPath.GetBuffer());
@@ -1128,11 +1134,11 @@ unsigned __stdcall CSaveDataToDBDlg::ThreadCirclelaryDelete( void* TheParam )
 
 			Sleep(10*60*1000);		//间隔10分钟查询一次
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
-		{
-			pDlgThis->WriteDlgLog("磁盘空间查询异常， 退出");
-			exit(1);
-		}
+		//__except(EXCEPTION_EXECUTE_HANDLER)
+		//{
+		//	pDlgThis->WriteDlgLog("磁盘空间查询异常， 退出");
+		//	exit(1);
+		//}
 	}
 	pDlgThis->WriteDlgLog("环覆盖线程退出");
 	return 0;
@@ -2259,7 +2265,7 @@ void CSaveDataToDBDlg::ConnectDevice( void )
 	tempDB.CloseDBConnect();
 	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
 	{
-		__try
+//		__try
 		{
 			if (g_CameraGroup[i])
 			{
@@ -2286,11 +2292,11 @@ void CSaveDataToDBDlg::ConnectDevice( void )
 				UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strResultCount, strResultCount);
 			}
 		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
+/*		__except(EXCEPTION_EXECUTE_HANDLER)
 		{
 			WriteDlgLog("Cennect Device 异常， 退出");
 			exit(1);
-		}		
+		}*/		
 	}
 
 	GetDlgItem(IDCANCEL)->EnableWindow(TRUE);

@@ -63,3 +63,7 @@ using namespace Gdiplus;
 #include "RemoteDataBaseControler.h"
 
 #include <new>				//尝试引入new 头文件，防止用以防止new 失败
+
+#ifdef DEBUG
+#include <vld.h> 
+#endif
