@@ -13,7 +13,7 @@
 #endif
 
 #define MAX_CAMERA_COUNT 100
-#define MAX_RESULT_COUNT 200
+#define MAX_RESULT_COUNT 400
 
 #import "c:\program files\common files\system\ado\msado15.dll" no_namespace rename ("EOF", "adoEOF") 
 
@@ -249,10 +249,11 @@ void CSaveDataToDBDlg::SaveLocal( void )
 	CString strLocalFilePath;
 	while(!m_bSaveLocalThreadExit)
 	{
+		EnterCriticalSection(&m_csSaveLocal);
 		if (m_lsSaveLocal.size() > 0)
 		{
 			//WaitForSingleObject(m_hSaveLocal, 70l);			//2015-01-19
-			EnterCriticalSection(&m_csSaveLocal);
+			
 			CameraResult* tempResult = NULL;
 			tempResult = m_lsSaveLocal.front();
 			m_lsSaveLocal.pop_front();
@@ -285,6 +286,7 @@ void CSaveDataToDBDlg::SaveLocal( void )
 		}
 		else
 		{
+			LeaveCriticalSection(&m_csSaveLocal);
 			Sleep(2000);
 		}
 	}
@@ -404,10 +406,11 @@ void CSaveDataToDBDlg::SaveRemote( void )
 	
 	while(!m_bSaveRemoteThreadExit)
 	{
+		EnterCriticalSection(&m_csSaveRemote);
 		if (m_lsSaveRemote.size() > 0)
 		{
 			//WaitForSingleObject(m_hSaveRemote, 70l);			//2015-01-19
-			EnterCriticalSection(&m_csSaveRemote);
+			
 			CameraResult* tempResult =NULL;
 			tempResult = m_lsSaveRemote.front();
 			m_lsSaveRemote.pop_front();
@@ -442,6 +445,7 @@ void CSaveDataToDBDlg::SaveRemote( void )
 		}
 		else
 		{
+			LeaveCriticalSection(&m_csSaveRemote);
 			Sleep(2000);
 		}
 	}
@@ -512,7 +516,7 @@ void CSaveDataToDBDlg::ReadRemote( void )
 				strtmpFileName.ReleaseBuffer();
 				WriteDlgRemotLog(chLogBuf);
 
-				LeaveCriticalSection(&m_csReadLocal);
+				LeaveCriticalSection(&m_csReadRemote);
 				continue;
 			}
 			CArchive theLoadArchive(&theRemoteFile, CArchive::load);
@@ -568,13 +572,19 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 
 	while(!m_bExit)
 	{
+		EnterCriticalSection(&m_csReadLocal);
 		if (m_lsReadLocal.size() > 0)
-		{
-			//WaitForSingleObject(m_hReadLocal, 70l);			//2015-01-19
-			EnterCriticalSection(&m_csReadLocal);
-			CameraResult* tempResult = m_lsReadLocal.front();
+		{			
+			CameraResult* tempResult = NULL;
+			tempResult = m_lsReadLocal.front();
 			m_lsReadLocal.pop_front();
-			//ReleaseMutex(m_hReadLocal);
+
+			if (NULL == tempResult)
+			{
+				WriteDlgLog("获取的结果为NULL");
+				LeaveCriticalSection(&m_csReadLocal);
+				continue;
+			}
 
 			hr1 = LocalDB.SaveNormalDataToDB(tempResult);
 			if (S_OK == hr1)
@@ -624,7 +634,6 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				delete tempResult;
 				tempResult = NULL;
 				//ReleaseMutex(m_hReadLocal);		//2015-01-19
-				LeaveCriticalSection(&m_csReadLocal);
 			}
 			else
 			{
@@ -638,9 +647,11 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				//ReleaseMutex(m_hReadLocal);			//2015-01-19
 				LeaveCriticalSection(&m_csSaveLocal);
 			}
+			LeaveCriticalSection(&m_csReadLocal);
 		}
 		else
 		{
+			LeaveCriticalSection(&m_csReadLocal);
 			Sleep(2000);
 		}
 	}
@@ -672,13 +683,19 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 
 	while(!m_bExit)
 	{
+		EnterCriticalSection(&m_csReadRemote);
 		if (m_lsReadRemote.size() > 0)
-		{
-			//WaitForSingleObject(m_hReadRemote, 70l);				//2015-01-19
-			EnterCriticalSection(&m_csReadRemote);
+		{			
+			
 			CameraResult* tempResult = m_lsReadRemote.front();
 			m_lsReadRemote.pop_front();
-			//ReleaseMutex(m_hReadRemote);					//2015-01-19
+
+			if (NULL == tempResult)
+			{
+				WriteDlgRemotLog("获取的结果为NULL");
+				LeaveCriticalSection(&m_csReadRemote);
+				continue;
+			}
 
 			hr1 = RemoteDB.SaveNormalDataToDB(tempResult);
 			if (S_OK == hr1)
@@ -713,6 +730,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 		}
 		else
 		{
+			LeaveCriticalSection(&m_csReadRemote);
 			Sleep(2000);
 		}
 	}
@@ -1158,6 +1176,10 @@ void CSaveDataToDBDlg::ShowRemotDBMessage( char* messageBuf )
 
 void CSaveDataToDBDlg::OnClose()
 {
+	if(AfxMessageBox(_T("真的要退出吗？"),MB_YESNO) != IDYES)
+	{
+		return;
+	}
 	// TODO: Add your message handler code here and/or call default
 	CMenu* psysMenu = GetSystemMenu(FALSE);
 	if(NULL != psysMenu)
@@ -1431,7 +1453,7 @@ void CSaveDataToDBDlg::OnBnClickedButtonDbtestconnect()
 		}
 		else
 		{
-			MessageBox("数据库连接失败，请检查网络设置或参数是否输入争取");	
+			MessageBox("数据库连接失败，请检查网络设置或参数是否输入正确");	
 		}
 		tempDBConnect->Close();
 		tempDBConnect = NULL;

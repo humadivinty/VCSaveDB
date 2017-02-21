@@ -3,7 +3,7 @@
 #include<atltime.h>
 //#include <vld.h>
 #include <new>
-#define MAX_LIST_COUNT 50
+#define MAX_LIST_COUNT 200
 
 extern CRITICAL_SECTION g_csFile;
 
@@ -19,6 +19,8 @@ CCamera::CCamera(void)
 	m_strIp = "172.18.1.1";
 
 	m_Result = NULL;
+	m_bDbEnable =false;
+	m_bMidDbEnable = false;
 
 
 	m_iBigImgWidth = 1600;
@@ -52,6 +54,13 @@ CCamera::CCamera(void)
 
 	m_hSaveResultThread = NULL;
 	m_hSemaphore = NULL;
+
+	g_lsLocalData = NULL;
+	g_lsRemoteData = NULL;
+	g_hLocalListMutex = NULL;
+	g_hRemoteListMutex = NULL;
+	g_csLocalCriticalSection = NULL;
+	g_csRemoteCriticalSection = NULL;
 }
 
 CCamera::CCamera(char* IP)
@@ -95,6 +104,13 @@ CCamera::CCamera(char* IP)
 
 	m_hSaveResultThread = NULL;
 	m_hSemaphore = NULL;
+
+	g_lsLocalData = NULL;
+	g_lsRemoteData = NULL;
+	g_hLocalListMutex = NULL;
+	g_hRemoteListMutex = NULL;
+	g_csLocalCriticalSection = NULL;
+	g_csRemoteCriticalSection = NULL;
 }
 
 CCamera::~CCamera(void)
@@ -110,6 +126,12 @@ CCamera::~CCamera(void)
 	}
 	DeleteCriticalSection( &m_csResult );
 	DeleteCriticalSection(&m_csLog);
+	g_lsLocalData = NULL;
+	g_lsRemoteData = NULL;
+	g_hLocalListMutex = NULL;
+	g_hRemoteListMutex = NULL;
+	g_csLocalCriticalSection = NULL;
+	g_csRemoteCriticalSection = NULL;
 }
 // 识别结果开始回调函数
 int CCamera::RecordInfoBegin(DWORD dwCarID)
