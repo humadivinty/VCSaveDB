@@ -315,85 +315,85 @@ void CSaveDataToDBDlg::ReadLocal( void )
 	CString strtmpFileName;
 	while(!m_bExit)
 	{
-		Sleep(2000);
-		CFileFind finder;
-		BOOL bWorking = finder.FindFile(tmpFilePath);
-		int Count = 0;
-		while(bWorking)
-		{
-			Sleep(100);
-			bWorking = finder.FindNextFile();
-			if (finder.IsDots())
-			{
-				continue;
-			}
-			if (finder.IsDirectory())
-			{
-				continue;
-			}
-			//信号量
-			BOOL bSuccess = FALSE;
-			//WaitForSingleObject(m_hRLocalMutex, 70l);				//2015-01-19
+			Sleep(10);
 			EnterCriticalSection(&m_csReadLocal);
-
-			strtmpFileName = finder.GetFilePath();
-			CameraResult* tempResult = new CameraResult();
-			CFile theLoadFile;
-			bSuccess = theLoadFile.Open(strtmpFileName, CFile::modeRead);
-			if (!bSuccess)
-			{
-				if (NULL != tempResult)
-				{
-					delete tempResult;
-					tempResult = NULL;
-				}
-				//ReleaseMutex(m_hRLocalMutex);					//2015-01-19
-				
-				LeaveCriticalSection(&m_csReadLocal);
-				continue;
-			}
-			ULONGLONG ulLenth = theLoadFile.GetLength();
-			if (ulLenth<= 100)
-			{
-				theLoadFile.Close();
-				DeleteFile(strtmpFileName);
-
-				char chLogBuf[256] = {0};
-				sprintf(chLogBuf, "%s数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
-				strtmpFileName.ReleaseBuffer();
-				WriteDlgLog(chLogBuf);
-
-				LeaveCriticalSection(&m_csReadLocal);
-				continue;
-			}
-			CArchive theLoadArchive(&theLoadFile, CArchive::load);
-			(*tempResult).Serialize(theLoadArchive);
-			theLoadArchive.Close();
-			theLoadFile.Close();
 			if (m_lsReadLocal.size()>=0 && m_lsReadLocal.size()< MAX_RESULT_COUNT)
-			{
-				m_lsReadLocal.push_back(tempResult);
+			{			
+				CFileFind finder;
+				BOOL bWorking = finder.FindFile(tmpFilePath);
+				int Count = 0;
+				while(bWorking)
+				{
+					//Sleep(100);
+					bWorking = finder.FindNextFile();
+					if (finder.IsDots())
+					{
+						//continue;
+						break;
+					}
+					if (finder.IsDirectory())
+					{
+						//continue;
+						break;
+					}
+					//信号量
+					BOOL bSuccess = FALSE;
+					//WaitForSingleObject(m_hRLocalMutex, 70l);				//2015-01-19
+					//EnterCriticalSection(&m_csReadLocal);
+
+					strtmpFileName = finder.GetFilePath();
+					CameraResult* tempResult = new CameraResult();
+					CFile theLoadFile;
+					bSuccess = theLoadFile.Open(strtmpFileName, CFile::modeRead);
+					if (!bSuccess)
+					{
+						if (NULL != tempResult)
+						{
+							delete tempResult;
+							tempResult = NULL;
+						}
+						//LeaveCriticalSection(&m_csReadLocal);
+						continue;
+					}
+					ULONGLONG ulLenth = theLoadFile.GetLength();
+					if (ulLenth<= 100)
+					{
+						theLoadFile.Close();
+						DeleteFile(strtmpFileName);
+
+						if (NULL != tempResult)
+						{
+							delete tempResult;
+							tempResult = NULL;
+						}
+
+						char chLogBuf[256] = {0};
+						sprintf(chLogBuf, "%s数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
+						strtmpFileName.ReleaseBuffer();
+						WriteDlgLog(chLogBuf);
+
+						//LeaveCriticalSection(&m_csReadLocal);
+						continue;
+					}
+					CArchive theLoadArchive(&theLoadFile, CArchive::load);
+					(*tempResult).Serialize(theLoadArchive);
+					theLoadArchive.Close();
+					theLoadFile.Close();
+
+					m_lsReadLocal.push_back(tempResult);
+
+					DeleteFile(strtmpFileName);
+
+					break;
+				}
+				finder.Close();
+				LeaveCriticalSection(&m_csReadLocal);
 			}
 			else
 			{
-				bSuccess = FALSE;
-				if (NULL != tempResult)
-				{
-					delete tempResult;
-					tempResult = NULL;
-				}
-			}
-
-			if (bSuccess)
-			{
-				DeleteFile(strtmpFileName);
-			}
-
-			//ReleaseMutex(m_hRLocalMutex);			//2015-01-19
-			LeaveCriticalSection(&m_csReadLocal);
-		}
-
-		finder.Close();
+				LeaveCriticalSection(&m_csReadLocal);
+				Sleep(200);
+			}		
 	}
 	return;
 }
@@ -477,84 +477,82 @@ void CSaveDataToDBDlg::ReadRemote( void )
 	CString strtmpFileName;
 	while(!m_bExit)
 	{
-		Sleep(2000);
-		CFileFind finder;
-		BOOL bWorking = finder.FindFile(tmpFilePath);
-		int Count = 0;
-		while(bWorking)
-		{
-			Sleep(100);
-			bWorking = finder.FindNextFile();
-			if (finder.IsDots())
+		Sleep(10);
+		EnterCriticalSection(&m_csReadRemote);
+		if (m_lsReadRemote.size()>=0 && m_lsReadRemote.size()< MAX_RESULT_COUNT)
+		{			
+			CFileFind finder;
+			BOOL bWorking = finder.FindFile(tmpFilePath);
+			int Count = 0;
+			while(bWorking)
 			{
-				continue;
-			}
-			if (finder.IsDirectory())
-			{
-				continue;
-			}
-			//信号量
-			BOOL bSuccess = FALSE;
-			//WaitForSingleObject(m_hRRemoteMutex, 70l);			//2015-01-19
-			EnterCriticalSection(&m_csReadRemote);
-
-			strtmpFileName = finder.GetFilePath();
-			CameraResult* tempResult = new CameraResult();
-			CFile theRemoteFile;
-			bSuccess = theRemoteFile.Open(strtmpFileName, CFile::modeRead);
-			if (!bSuccess)
-			{
-				if (NULL != tempResult)
+				//Sleep(100);
+				bWorking = finder.FindNextFile();
+				if (finder.IsDots())
 				{
-					delete tempResult;
-					tempResult = NULL;
+					//continue;
+					break;
 				}
-				//ReleaseMutex(m_hRRemoteMutex);			//2015-01-19
-				LeaveCriticalSection(&m_csReadRemote);
-				continue;
-			}
-			//if (theRemoteFile.GetLength() <= 10)
-			ULONGLONG ulLenth = theRemoteFile.GetLength();
-			if ( ulLenth<= 100)
-			{
-				theRemoteFile.Close();
-				DeleteFile(strtmpFileName);
+				if (finder.IsDirectory())
+				{
+					//continue;
+					break;
+				}
+				//信号量
+				BOOL bSuccess = FALSE;				
 
-				char chLogBuf[256] = {0};
-				sprintf(chLogBuf, "%s数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
-				strtmpFileName.ReleaseBuffer();
-				WriteDlgRemotLog(chLogBuf);
+				strtmpFileName = finder.GetFilePath();
+				CameraResult* tempResult = new CameraResult();
+				CFile theLoadFile;
+				bSuccess = theLoadFile.Open(strtmpFileName, CFile::modeRead);
+				if (!bSuccess)
+				{
+					if (NULL != tempResult)
+					{
+						delete tempResult;
+						tempResult = NULL;
+					}					
+					continue;
+				}
+				ULONGLONG ulLenth = theLoadFile.GetLength();
+				if (ulLenth<= 100)
+				{
+					theLoadFile.Close();
+					DeleteFile(strtmpFileName);
 
-				LeaveCriticalSection(&m_csReadRemote);
-				continue;
-			}
-			CArchive theLoadArchive(&theRemoteFile, CArchive::load);
-			(*tempResult).Serialize(theLoadArchive);
-			theLoadArchive.Close();
-			theRemoteFile.Close();
-			if (m_lsReadRemote.size()>= 0 && m_lsReadRemote.size() < MAX_RESULT_COUNT)
-			{
+					if (NULL != tempResult)
+					{
+						delete tempResult;
+						tempResult = NULL;
+					}
+
+					char chLogBuf[256] = {0};
+					sprintf(chLogBuf, "%s remote数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
+					strtmpFileName.ReleaseBuffer();
+					WriteDlgRemotLog(chLogBuf);
+
+					//LeaveCriticalSection(&m_csReadLocal);
+					continue;
+				}
+				CArchive theRemoteArchive(&theLoadFile, CArchive::load);
+				(*tempResult).Serialize(theRemoteArchive);
+				theRemoteArchive.Close();
+				theLoadFile.Close();
+
 				m_lsReadRemote.push_back(tempResult);
-			}
-			else
-			{
-				bSuccess = FALSE;
-				if (NULL != tempResult)
-				{
-					delete tempResult;
-					tempResult = NULL;
-				}
-			}
 
-			//ReleaseMutex(m_hRRemoteMutex);			//2015-01-19
-
-			if (bSuccess)
-			{
 				DeleteFile(strtmpFileName);
+
+				break;
 			}
+			finder.Close();
 			LeaveCriticalSection(&m_csReadRemote);
 		}
-		finder.Close();
+		else
+		{
+			LeaveCriticalSection(&m_csReadRemote);
+			Sleep(200);
+		}
 	}
 	return;
 }

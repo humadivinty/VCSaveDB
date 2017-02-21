@@ -238,13 +238,13 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	else
 	{
 		char szLog[256] = {0};
-		//sprintf(szLog, "队列满了，直接删除结果 < CarID : %08d, 车牌 : %s > \n", m_Result->dwCarID, m_Result->chPlateNO);
-		sprintf(szLog, "队列满了，将结果缓存到本地 < CarID : %08d, 车牌 : %s , ListNo : %s> \n", m_Result->dwCarID, m_Result->chPlateNO, m_Result->chListNo);
+		sprintf(szLog, "队列满了，直接删除结果 < CarID : %08d, 车牌 : %s > \n", m_Result->dwCarID, m_Result->chPlateNO);
+		//sprintf(szLog, "队列满了，将结果缓存到本地 < CarID : %08d, 车牌 : %s , ListNo : %s> \n", m_Result->dwCarID, m_Result->chPlateNO, m_Result->chListNo);
 		WriteLog(szLog);
 
 		// 保存结果到本地缓存目录
-		saveImage(m_Result, SAVE_TO_CACHE_DIRECTORY);
-		saveImage(m_Result, SAVE_TO_BACKUP_DIRECTORY);
+		//saveImage(m_Result, SAVE_TO_CACHE_DIRECTORY);
+		//saveImage(m_Result, SAVE_TO_BACKUP_DIRECTORY);
 
 		////将结果加入到缓存本地线程队列
 		//if (m_bDbEnable)
