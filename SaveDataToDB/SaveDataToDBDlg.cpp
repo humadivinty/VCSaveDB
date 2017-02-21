@@ -577,7 +577,8 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 	{
 		EnterCriticalSection(&m_csReadLocal);
 		if (m_lsReadLocal.size() > 0)
-		{			
+		{
+			Sleep(60);
 			CameraResult* tempResult = NULL;
 			tempResult = m_lsReadLocal.front();
 			m_lsReadLocal.pop_front();
@@ -688,8 +689,8 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 	{
 		EnterCriticalSection(&m_csReadRemote);
 		if (m_lsReadRemote.size() > 0)
-		{			
-			
+		{
+			Sleep(60);
 			CameraResult* tempResult = m_lsReadRemote.front();
 			m_lsReadRemote.pop_front();
 
@@ -2030,7 +2031,10 @@ void CSaveDataToDBDlg::ConnectDevice( void )
 			CString strResultCount("");
 			//UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strResultCount, strResultCount);
 			//if (!g_CameraGroup[i]->SetListAndMutex(&m_lsReadLocal, &m_hReadLocal, &m_lsReadRemote, &m_hReadRemote))
-			if( !g_CameraGroup[i]->SetListAndCriticalSection(&m_lsReadLocal, &m_csReadLocal, &m_lsReadRemote, &m_csReadRemote) )
+			if( !g_CameraGroup[i]->SetListAndCriticalSection(&m_lsReadLocal, &m_csReadLocal, 
+				&m_lsReadRemote, &m_csReadRemote, 
+				&m_lsSaveLocal, &m_csSaveLocal,
+				&m_lsSaveRemote, &m_csSaveRemote) )
 			{
 				continue;
 			}
