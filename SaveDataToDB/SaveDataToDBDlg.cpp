@@ -1665,7 +1665,8 @@ bool CSaveDataToDBDlg::UpdateListCtrlView( CString& strDeviceID, CString& strCam
 	bool bFindListItem = false, bFindDataItem = false ;
 	for ( i = 0; i< m_lsListCtrl.GetItemCount(); i++)
 	{
-		if (m_lsListCtrl.GetItemText(i, 1) ==  strDeviceID)
+		//if (m_lsListCtrl.GetItemText(i, 1) ==  strDeviceID)
+		if (m_lsListCtrl.GetItemText(i, 2) ==  strCameraIP)
 		{
 			bFindListItem = true;
 			break;
@@ -1674,7 +1675,8 @@ bool CSaveDataToDBDlg::UpdateListCtrlView( CString& strDeviceID, CString& strCam
 
 	for (j = 0; j < MAX_PATH; j++)
 	{
-		if (m_ListCtrlDataGroup[j].strDeviceID ==  strDeviceID)
+		//if (m_ListCtrlDataGroup[j].strDeviceID ==  strDeviceID)
+		if (m_ListCtrlDataGroup[j].strDeviceIP ==  strCameraIP)
 		{
 			bFindDataItem = true;
 			break;
@@ -1683,11 +1685,16 @@ bool CSaveDataToDBDlg::UpdateListCtrlView( CString& strDeviceID, CString& strCam
 
 	if (bFindListItem)
 	{
-		if ("" != strCameraIP)
+		if ("" != strDeviceID)
 		{
-			m_ListCtrlDataGroup[j].strDeviceIP = strCameraIP;
-			m_lsListCtrl.SetItemText(i, 2, m_ListCtrlDataGroup[j].strDeviceIP);
+			m_ListCtrlDataGroup[j].strDeviceID = strDeviceID;
+			m_lsListCtrl.SetItemText(i, 1, m_ListCtrlDataGroup[j].strDeviceID);
 		}
+		//if ("" != strCameraIP)
+		//{
+		//	m_ListCtrlDataGroup[j].strDeviceIP = strCameraIP;
+		//	m_lsListCtrl.SetItemText(i, 2, m_ListCtrlDataGroup[j].strDeviceIP);
+		//}
 		if ("" != strCamerStatus)
 		{
 			m_ListCtrlDataGroup[j].strDeviceStatus = strCamerStatus;

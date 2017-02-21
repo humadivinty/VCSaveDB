@@ -81,7 +81,6 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 
 		_RecordsetPtr    pRecordset;
 		//int nTick=::GetTickCount();
-
 		pRecordset.CreateInstance(__uuidof(Recordset));
 
 			//²åÈë´óÍ¼Êý¾Ý
@@ -97,8 +96,6 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 		SAFEARRAY* pSA=  SetPictureToVariant(pvList,(unsigned char *)pImage,nImageLen);    
 
 		pRecordset->Fields->Item[_variant_t("FullViewPhoto")]->AppendChunk(pvList);                  //JPGÍ¼ÏñÎÄ¼þ
-
-
 		if(S_OK!=pRecordset->Update())
 		{
 			CString strLog;
@@ -132,15 +129,16 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 			//AfxMessageBox("SaveBigImageToDB::sqlÖ´ÐÐÓï¾äÓÐÓï·¨´íÎó",0,0);
 		}
 
-		if(strstr(strError,"3121"))
-		{
-			LocalDBWriteLog("SaveBigImageToDB::²éÑ¯³¬Ê±");
-			//exit(0);
-		}
+		//if(strstr(strError,"3121"))
+		//{
+		//	LocalDBWriteLog("SaveBigImageToDB::²éÑ¯³¬Ê±");
+		//	//exit(0);
+		//}
 		LocalDBWriteLog("SaveBigImageToDB::Ë¯5ÃëÖÓ");
 
-		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strError,"3121"))
 		{
+			LocalDBWriteLog("SaveBigImageToDB::²éÑ¯³¬Ê±");
 			m_pConnectionPtr->Close();
 		}
 		//Sleep(5*1000);
@@ -302,8 +300,9 @@ HRESULT LocalDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevic
 		{
 			hr = S_FALSE;
 		}
-		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strErrorMessage,"3121") )
 		{
+			LocalDBWriteLog("SaveDeviceStatusToDB:: ²éÑ¯³¬Ê±");
 			m_pConnectionPtr->Close();
 		}
 		//Sleep(5*1000);
@@ -377,7 +376,8 @@ HRESULT LocalDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 	{		
 		hr =S_FALSE;
 		CString strErrorMessage;
-		strErrorMessage.Format("SaveNormalDataToDB£ºÊý¾Ý¿âÐ´ÈëÊ§°Ü£¡´íÎóÐÅÏ¢:%s ´íÎóÂë:%d , ´íÎóÃèÊö: %s , Á÷Ë®ºÅÎª£º%s ", e.ErrorMessage(), GetLastError(), (char*)e.Description(), pRecord->chListNo);
+		strErrorMessage.Format("SaveNormalDataToDB£ºÊý¾Ý¿âÐ´ÈëÊ§°Ü£¡´íÎóÐÅÏ¢:%s ´íÎóÂë:%d , ´íÎóÃèÊö: %s , Á÷Ë®ºÅÎª£º%s ",
+			e.ErrorMessage(), GetLastError(), (char*)e.Description(), pRecord->chListNo);
 		LocalDBWriteLog(strErrorMessage.GetBuffer());
 		strErrorMessage.ReleaseBuffer();
 
@@ -391,8 +391,9 @@ HRESULT LocalDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 			hr=S_OK;
 		}
 
-		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strErrorMessage,"3121"))
 		{
+			LocalDBWriteLog("SaveNormalDataToDB£¬²éÑ¯³¬Ê±");
 			m_pConnectionPtr->Close();
 		}
 		//Sleep(5*1000);

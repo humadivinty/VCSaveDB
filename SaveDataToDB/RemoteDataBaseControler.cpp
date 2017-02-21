@@ -131,7 +131,7 @@ HRESULT RemoteDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 			RemoteDBWriteLog(szLog1);
 			hr=S_OK;
 		}
-		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strErrorMessage,"3121"))
 		{
 			m_pConnectionPtr->Close();
 		}
@@ -204,7 +204,7 @@ HRESULT RemoteDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevi
 			hr = S_FALSE;
 		}
 
-		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strErrorMessage,"3121") )
 		{
 			m_pConnectionPtr->Close();
 		}
