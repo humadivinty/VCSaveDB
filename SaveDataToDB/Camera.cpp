@@ -172,7 +172,7 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	{
 		return -1;
 	}
-	AnalyseRecord(m_Result);
+	
 	m_bResultComplete = true;
 
 	//加入结果队列中
@@ -272,7 +272,7 @@ int CCamera::RecordInfoPlate(DWORD dwCarID,
 		m_Result->pcAppendInfo = tempPtr;
 	}
 	//对结果进行处理
-	//AnalyseRecord(m_Result);
+	AnalyseRecord(m_Result);
 
 	LeaveCriticalSection(&m_csResult);
 	return 0;

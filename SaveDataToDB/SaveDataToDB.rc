@@ -145,7 +145,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "TODO: <公司名>"
             VALUE "FileDescription", "TODO: <文件说明>"
-            VALUE "FileVersion", "1.0.0.2-tepm01"
+            VALUE "FileVersion", "1.0.0.3-2015-01-22-01"
             VALUE "InternalName", "SaveDataToDB.exe"
             VALUE "LegalCopyright", "TODO: (C) <公司名>。保留所有权利。"
             VALUE "OriginalFilename", "SaveDataToDB.exe"

@@ -551,6 +551,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 			Sleep(2000);
 		}
 	}
+	LocalDB.CloseDBConnect();
 }
 
 unsigned __stdcall CSaveDataToDBDlg::ThreadSaveRemoteDB( void* TheParam )
@@ -614,6 +615,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 			Sleep(2000);
 		}
 	}
+	RemoteDB.CloseDBConnect();
 }
 
 unsigned __stdcall CSaveDataToDBDlg::ThreadSafeStatuToDB( void* TheParam )
