@@ -1443,21 +1443,25 @@ void CSaveDataToDBDlg::OnClose()
 	m_bSaveRemoteThreadExit = true;
 	if (m_hReadLocal)
 	{
+        WaitForSingleObject( m_hReadLocal, INFINITE );
 		CloseHandle(m_hReadLocal);
 		m_hReadLocal = NULL;
 	}
 	if (m_hSaveLocal)
 	{
+        WaitForSingleObject( m_hSaveLocal, INFINITE );
 		CloseHandle(m_hSaveLocal);
 		m_hSaveLocal = NULL;
 	}
 	if (m_hReadRemote)
 	{
+        WaitForSingleObject( m_hReadRemote, INFINITE );
 		CloseHandle(m_hReadRemote);
 		m_hReadRemote = NULL;
 	}
 	if (m_hSaveRemote)
 	{
+        WaitForSingleObject( m_hSaveRemote, INFINITE );
 		CloseHandle(m_hSaveRemote);
 		m_hSaveRemote = NULL;
 	}
@@ -1465,6 +1469,7 @@ void CSaveDataToDBDlg::OnClose()
 	{
 		if (m_hSaveRemoteDB[i])
 		{
+            WaitForSingleObject( m_hSaveRemoteDB[i], INFINITE );
 			CloseHandle(m_hSaveRemoteDB[i]);
 			m_hSaveRemoteDB[i] =NULL;
 		}
@@ -1473,6 +1478,7 @@ void CSaveDataToDBDlg::OnClose()
 	{
 		if (m_hSaveLocalDB[j])
 		{
+            WaitForSingleObject( m_hSaveLocalDB[i], INFINITE );
 			CloseHandle(m_hSaveLocalDB[j]);
 			m_hSaveLocalDB[j] = NULL;
 		}
@@ -1480,11 +1486,13 @@ void CSaveDataToDBDlg::OnClose()
 
 	if (m_hSaveStatusToDB)
 	{
+        WaitForSingleObject( m_hSaveStatusToDB, INFINITE );
 		CloseHandle(m_hSaveStatusToDB);
 		m_hSaveStatusToDB = NULL;
 	}
 	if (m_hCircleDelete)
 	{
+        WaitForSingleObject( m_hCircleDelete, INFINITE );
 		CloseHandle(m_hCircleDelete);
 		m_hCircleDelete = NULL;
 	}
@@ -1597,16 +1605,17 @@ void CSaveDataToDBDlg::OnBnClickedButtonShowimg()
 
 		pMyRecord->Close();
 		pMyRecord = NULL;
+
+        if (adStateOpen == pMyConnect->GetState())
+        {
+            pMyConnect->Close();
+        }
 	}
 	catch(_com_error e)
 	{
 		char errorInfo[MAX_PATH] = {0};
 		sprintf(errorInfo,"查询失败, 错误信息：%s, 错误描述：%s ",e.ErrorMessage(), (char*)e.Description());		
 		MessageBox(errorInfo);
-	}
-	if (adStateOpen == pMyConnect->GetState())
-	{
-		pMyConnect->Close();		
 	}
 	GetDlgItem(ID_BUTTON_SHOWIMG)->EnableWindow(TRUE);
 }
@@ -1730,15 +1739,22 @@ void CSaveDataToDBDlg::StopToSaveDBData()
 		//本地数据库的保存
 		//WaitForSingleObject(m_hSaveLocal, 70l);			//2015-01-19
 		EnterCriticalSection(&m_csReadLocal);
-		CameraResult* tempLocalResult =NULL;
-		tempLocalResult = m_lsReadLocal.front();
-		m_lsReadLocal.pop_front();			//从“读本地”队列取出数据
+        if(m_lsReadLocal.size()> 0)
+        {
+            CameraResult* tempLocalResult =NULL;
+            tempLocalResult = m_lsReadLocal.front();
+            m_lsReadLocal.pop_front();			//从“读本地”队列取出数据
+            LeaveCriticalSection(&m_csReadLocal);
 
-		EnterCriticalSection(&m_csSaveLocal);
-		m_lsSaveLocal.push_back(tempLocalResult);		//存入“写本地”队列中
-		LeaveCriticalSection(&m_csSaveLocal);
+            EnterCriticalSection(&m_csSaveLocal);
+            m_lsSaveLocal.push_back(tempLocalResult);		//存入“写本地”队列中
+            LeaveCriticalSection(&m_csSaveLocal);
+        }
+        else
+        {
+            LeaveCriticalSection(&m_csReadLocal);
+        }
 
-		LeaveCriticalSection(&m_csReadLocal);
 		//ReleaseMutex(m_hSaveLocal);			//2015-01-19
 	}
 	while(m_lsReadRemote.size() > 0)
@@ -1746,24 +1762,59 @@ void CSaveDataToDBDlg::StopToSaveDBData()
 		//中间库的数据保存
 		//WaitForSingleObject(m_hSaveRemote, 70l);				//2015-01-19
 		EnterCriticalSection(&m_csReadRemote);
-		CameraResult* tempRemoteResult =NULL;
-		tempRemoteResult = m_lsReadRemote.front();
-		m_lsReadRemote.pop_front();			//从“读本地”队列取出数据
+        if(m_lsReadRemote.size() > 0)
+        {
+            CameraResult* tempRemoteResult =NULL;
+            tempRemoteResult = m_lsReadRemote.front();
+            m_lsReadRemote.pop_front();			//从“读本地”队列取出数据
+            LeaveCriticalSection(&m_csReadRemote);
 
-		EnterCriticalSection(&m_csSaveRemote);
-		m_lsSaveRemote.push_back(tempRemoteResult);		//存入“写本地”队列中
-		LeaveCriticalSection(&m_csSaveRemote);
-
-		LeaveCriticalSection(&m_csReadRemote);
+            EnterCriticalSection(&m_csSaveRemote);
+            m_lsSaveRemote.push_back(tempRemoteResult);		//存入“写本地”队列中
+            LeaveCriticalSection(&m_csSaveRemote);
+        }
+        else
+        {
+            LeaveCriticalSection(&m_csReadRemote);
+        }
 		//ReleaseMutex(m_hSaveRemote);
 	}
 	
-	while(m_lsSaveLocal.size() > 0 || m_lsSaveRemote.size() > 0)
-	{
-		Sleep(3000);				//等待将队列中的数据保存到本地
-	}
-	m_bSaveLocalThreadExit = true ;
-	m_bSaveRemoteThreadExit = true;
+
+    while(!m_bSaveLocalThreadExit || !m_bSaveRemoteThreadExit)
+    {
+        EnterCriticalSection(&m_csSaveLocal);
+        if(m_lsSaveLocal.size() > 0)
+        {
+            LeaveCriticalSection(&m_csSaveLocal);
+            Sleep(3000);
+        }
+        else
+        {
+            LeaveCriticalSection(&m_csSaveLocal);
+        }//等待将队列中的数据保存到本地
+
+        EnterCriticalSection(&m_csSaveRemote);
+        if(m_lsSaveRemote.size() > 0)
+        {
+            LeaveCriticalSection(&m_csSaveRemote);
+            Sleep(3000);
+        }
+        else
+        {
+            LeaveCriticalSection(&m_csSaveRemote);
+        }//等待将队列中的数据保存到本地
+    }
+
+    EnterCriticalSection(&m_csSaveLocal);
+    m_bSaveLocalThreadExit = true ;
+     LeaveCriticalSection(&m_csSaveLocal);
+
+
+     EnterCriticalSection(&m_csSaveRemote);
+     m_bSaveRemoteThreadExit = true;
+     LeaveCriticalSection(&m_csSaveRemote);
+
 }
 
 void CSaveDataToDBDlg::OnBnClickedButton1()
@@ -1780,7 +1831,12 @@ void CSaveDataToDBDlg::OnBnClickedButton1()
 	}
 
 	//连接设备
-	_beginthreadex( NULL, 0, &ThreadConnectDevice, this, 0, NULL );
+    HANDLE hConnetDevice =  _beginthreadex( NULL, 0, &ThreadConnectDevice, this, 0, NULL );
+    WaitForSingleObject(hConnetDevice, INFINITE);
+    CloseHandle(hConnetDevice);
+    hConnetDevice = NULL;
+
+    WriteDlgLog("begin DB thread.");
 
 	////创建本地数据库插入的相关线程
 	//m_hReadLocal = (HANDLE)_beginthreadex( NULL, 0, &ThreadReadLocal, this, 0, NULL );

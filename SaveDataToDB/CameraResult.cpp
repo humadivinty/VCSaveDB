@@ -10,10 +10,12 @@ CameraIMG::CameraIMG()
 	pbImgData = NULL;
 	dwImgSize = 0;
 
-	for (int i = 0; i< sizeof(chSavePath); i++)
-	{
-		chSavePath[i] = 0;
-	}
+    memset(chSavePath, 0, 256);
+
+    //	for (int i = 0; i< sizeof(chSavePath); i++)
+    //	{
+    //		chSavePath[i] = 0;
+    //	}
 }
 
 CameraIMG::CameraIMG( const CameraIMG& CaIMG )
@@ -22,10 +24,11 @@ CameraIMG::CameraIMG( const CameraIMG& CaIMG )
 	wImgHeight = CaIMG.wImgHeight;
 	dwImgSize = CaIMG.dwImgSize;
 	wImgType = CaIMG.wImgType;
-	for (int i = 0; i< sizeof(chSavePath); i++)
-	{
-		chSavePath[i] = CaIMG.chSavePath[i];
-	}
+    memcpy(chSavePath, CaIMG.chSavePath, 256);
+    //	for (int i = 0; i< sizeof(chSavePath); i++)
+    //	{
+    //		chSavePath[i] = CaIMG.chSavePath[i];
+    //	}
 	if (NULL != CaIMG.pbImgData)
 	{
 		pbImgData = new BYTE[CaIMG.dwImgSize];
@@ -61,24 +64,25 @@ CameraIMG& CameraIMG::operator = (const CameraIMG& CaIMG)
 		wImgHeight = CaIMG.wImgHeight;
 		dwImgSize = CaIMG.dwImgSize;
 		wImgType = CaIMG.wImgType;
-		for (int i = 0; i< sizeof(chSavePath); i++)
-		{
-			chSavePath[i] = CaIMG.chSavePath[i];
-		}
-		if (NULL != CaIMG.pbImgData)
-		{
-			pbImgData = new BYTE[CaIMG.dwImgSize];
-			for (DWORD j = 0; j< dwImgSize; j++)
-			{
-				pbImgData[j] = CaIMG.pbImgData[j];
-			}
-		}
-		else
-		{
-			pbImgData = NULL;
-		}
-	}	
-	return *this;
+        memcpy(chSavePath, CaIMG.chSavePath, 256);
+        //		for (int i = 0; i< sizeof(chSavePath); i++)
+        //		{
+        //			chSavePath[i] = CaIMG.chSavePath[i];
+        //		}
+        if (NULL != CaIMG.pbImgData)
+        {
+            pbImgData = new BYTE[CaIMG.dwImgSize];
+            for (DWORD j = 0; j< dwImgSize; j++)
+            {
+                pbImgData[j] = CaIMG.pbImgData[j];
+            }
+        }
+        else
+        {
+            pbImgData = NULL;
+        }
+    }
+    return *this;
 }
 
 void CameraIMG::Serialize(CArchive& archive)
@@ -120,101 +124,54 @@ IMPLEMENT_SERIAL(CameraResult, CObject, 1)
 
 CameraResult::CameraResult()
 {
-	iLaneNo = 0;
-	iPlateColor = 0;
-	iVehTypeNo = 0;
-	iDirection = 0;				//路口方向
-	iAreaNo = 0;
-	iVehBodyColorNo = 0;
-	iPlateTypeNo = 0;
-	iVehBodyDeepNo = 0;
-	iDeviceID = 0;
-	iRoadNo = 0;
-	iSpeed = 0;
-	pcAppendInfo = NULL;
+    dwCarID = 0;
+    iPlateColor = 0;
+    iPlateTypeNo = 0;
+    iVehTypeNo = 0;
+    iLaneNo = 0;				//路口方向
+    iDirection = 0;
+    iVehBodyColorNo = 0;
+    iVehBodyDeepNo = 0;
+    dw64TimeMS = 0;
+    iDeviceID = 0;
+    iAreaNo = 0;
+    iRoadNo = 0;
+    iSpeed = 0;
 
-	for (int i = 0; i < sizeof(chDeviceIp); i++)
-	{
-		chDeviceIp[i] = 0;
-	}
+    pcAppendInfo = NULL;
 
-	for (int i = 0; i < sizeof(chPlateNO); i++)
-	{
-		chPlateNO[i] = 0;
-	}
-
-	for (int i = 0; i < sizeof(chListNo); i++)
-	{
-		chListNo[i] = 0;
-	}
-
-	for (int i = 0; i < sizeof(chPlateTime); i++)
-	{
-		chPlateTime[i] = 0;
-	}
-
-	for (int i = 0; i < sizeof(chVehPlateManual); i++)
-	{
-		chVehPlateManual[i] = 0;
-	}
-
-	for (int i = 0; i < sizeof(chVehPlateSoft); i++)
-	{
-		chVehPlateSoft[i] = 0;
-	}
+    memset(chDeviceIp, 32, 0);
+    memset(chPlateNO, 32, 0);
+    memset(chListNo, 256, 0);
+    memset(chPlateTime, 256, 0);
+    memset(chVehPlateManual, 20, 0);
+    memset(chVehPlateSoft, 20, 0);
 }
 
 CameraResult::CameraResult( const CameraResult& CaRESULT )
 {
-	iLaneNo = CaRESULT.iLaneNo;
-	iPlateColor = CaRESULT.iPlateColor;
-	iVehTypeNo = CaRESULT.iVehTypeNo;
-	iDirection = CaRESULT.iDirection;				//路口方向
-	iAreaNo = CaRESULT.iAreaNo;
-	iVehBodyColorNo = CaRESULT.iVehBodyColorNo;
-	iPlateTypeNo = CaRESULT.iPlateTypeNo;
-	iVehBodyDeepNo = CaRESULT.iVehBodyDeepNo;
-	iDeviceID = CaRESULT.iDeviceID;
-	iRoadNo = CaRESULT.iRoadNo;
-	iSpeed = CaRESULT.iSpeed;
-	pcAppendInfo = NULL;
+    dwCarID = CaRESULT.dwCarID;
+    iPlateColor = CaRESULT.iPlateColor;
+    iPlateTypeNo = CaRESULT.iPlateTypeNo;
+    iVehTypeNo = CaRESULT.iVehTypeNo;
+    iLaneNo = CaRESULT.iLaneNo;				//路口方向
+    iDirection = CaRESULT.iDirection;
+    iVehBodyColorNo = CaRESULT.iVehBodyColorNo;
+    iVehBodyDeepNo = CaRESULT.iVehBodyDeepNo;
+    dw64TimeMS = CaRESULT.dw64TimeMS;
+    iDeviceID = CaRESULT.iDeviceID;
+    iAreaNo = CaRESULT.iAreaNo;
+    iRoadNo = CaRESULT.iRoadNo;
+    iSpeed = CaRESULT.iSpeed;
 
-	//sprintf(chDeviceIp, "%s", CaRESULT.chDeviceIp);
-	//sprintf(chPlateNO, "%s", CaRESULT.chPlateNO);
-	//sprintf(chListNo, "%s", CaRESULT.chListNo);
-	//sprintf(chPlateTime, "%s", CaRESULT.chPlateTime);
-	//sprintf(chVehPlateManual, "%s", CaRESULT.chVehPlateManual);
-	//sprintf(chVehPlateSoft, "%s", CaRESULT.chVehPlateSoft);
+    pcAppendInfo = NULL;
 
-	for (int i = 0; i < sizeof(chDeviceIp); i++)
-	{
-		chDeviceIp[i] = CaRESULT.chDeviceIp[i];
-	}
-
-	for (int i = 0; i < sizeof(chPlateNO); i++)
-	{
-		chPlateNO[i] = CaRESULT.chPlateNO[i];
-	}
-
-	for (int i = 0; i < sizeof(chListNo); i++)
-	{
-		chListNo[i] = CaRESULT.chListNo[i];
-	}
-
-	for (int i = 0; i < sizeof(chPlateTime); i++)
-	{
-		chPlateTime[i] = CaRESULT.chPlateTime[i];
-	}
-
-	for (int i = 0; i < sizeof(chVehPlateManual); i++)
-	{
-		chVehPlateManual[i] = CaRESULT.chVehPlateManual[i];
-	}
-
-	for (int i = 0; i < sizeof(chVehPlateSoft); i++)
-	{
-		chVehPlateSoft[i] = CaRESULT.chVehPlateSoft[i];
-	}
+    memcpy(chDeviceIp, CaRESULT.chDeviceIp, sizeof(chDeviceIp));
+    memcpy(chPlateNO, CaRESULT.chPlateNO, sizeof(chPlateNO));
+    memcpy(chListNo, CaRESULT.chListNo, sizeof(chListNo));
+    memcpy(chPlateTime, CaRESULT.chPlateTime, sizeof(chPlateTime));
+    memcpy(chVehPlateManual, CaRESULT.chVehPlateManual, sizeof(chVehPlateManual));
+    memcpy(chVehPlateSoft, CaRESULT.chVehPlateSoft, sizeof(chVehPlateSoft));
 
 	CIMG_SpecialImage = CaRESULT.CIMG_SpecialImage;
 	CIMG_FullImage = CaRESULT.CIMG_FullImage;
@@ -250,47 +207,28 @@ CameraResult::~CameraResult()
 
 CameraResult& CameraResult::operator=( const CameraResult& CaRESULT )
 {
-	iLaneNo = CaRESULT.iLaneNo;
-	iPlateColor = CaRESULT.iPlateColor;
-	iVehTypeNo = CaRESULT.iVehTypeNo;
-	iDirection = CaRESULT.iDirection;				//路口方向
-	iAreaNo = CaRESULT.iAreaNo;
-	iVehBodyColorNo = CaRESULT.iVehBodyColorNo;
-	iPlateTypeNo = CaRESULT.iPlateTypeNo;
-	iVehBodyDeepNo = CaRESULT.iVehBodyDeepNo;
-	iDeviceID = CaRESULT.iDeviceID;
-	iRoadNo = CaRESULT.iRoadNo;
-	iSpeed = CaRESULT.iSpeed;
-	pcAppendInfo = NULL;
-	for (int i = 0; i < sizeof(chDeviceIp); i++)
-	{
-		chDeviceIp[i] = CaRESULT.chDeviceIp[i];
-	}
+    dwCarID = CaRESULT.dwCarID;
+    iPlateColor = CaRESULT.iPlateColor;
+    iPlateTypeNo = CaRESULT.iPlateTypeNo;
+    iVehTypeNo = CaRESULT.iVehTypeNo;
+    iLaneNo = CaRESULT.iLaneNo;				//路口方向
+    iDirection = CaRESULT.iDirection;
+    iVehBodyColorNo = CaRESULT.iVehBodyColorNo;
+    iVehBodyDeepNo = CaRESULT.iVehBodyDeepNo;
+    dw64TimeMS = CaRESULT.dw64TimeMS;
+    iDeviceID = CaRESULT.iDeviceID;
+    iAreaNo = CaRESULT.iAreaNo;
+    iRoadNo = CaRESULT.iRoadNo;
+    iSpeed = CaRESULT.iSpeed;
 
-	for (int i = 0; i < sizeof(chPlateNO); i++)
-	{
-		chPlateNO[i] = CaRESULT.chPlateNO[i];
-	}
+    pcAppendInfo = NULL;
 
-	for (int i = 0; i < sizeof(chListNo); i++)
-	{
-		chListNo[i] = CaRESULT.chListNo[i];
-	}
-
-	for (int i = 0; i < sizeof(chPlateNO); i++)
-	{
-		chPlateNO[i] = CaRESULT.chPlateNO[i];
-	}
-
-	for (int i = 0; i < sizeof(chVehPlateManual); i++)
-	{
-		chVehPlateManual[i] = CaRESULT.chVehPlateManual[i];
-	}
-
-	for (int i = 0; i < sizeof(chVehPlateSoft); i++)
-	{
-		chVehPlateSoft[i] = CaRESULT.chVehPlateSoft[i];
-	}
+    memcpy(chDeviceIp, CaRESULT.chDeviceIp, sizeof(chDeviceIp));
+    memcpy(chPlateNO, CaRESULT.chPlateNO, sizeof(chPlateNO));
+    memcpy(chListNo, CaRESULT.chListNo, sizeof(chListNo));
+    memcpy(chPlateTime, CaRESULT.chPlateTime, sizeof(chPlateTime));
+    memcpy(chVehPlateManual, CaRESULT.chVehPlateManual, sizeof(chVehPlateManual));
+    memcpy(chVehPlateSoft, CaRESULT.chVehPlateSoft, sizeof(chVehPlateSoft));
 
 	CIMG_SpecialImage = CaRESULT.CIMG_SpecialImage;
 	CIMG_FullImage = CaRESULT.CIMG_FullImage;
