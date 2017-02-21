@@ -13,7 +13,7 @@
 #endif
 
 #define MAX_CAMERA_COUNT 100
-#define MAX_RESULT_COUNT 150
+#define MAX_RESULT_COUNT 200
 
 #import "c:\program files\common files\system\ado\msado15.dll" no_namespace rename ("EOF", "adoEOF") 
 
@@ -232,7 +232,7 @@ void CSaveDataToDBDlg::SaveLocal( void )
 		}
 		else
 		{
-			Sleep(5000);
+			Sleep(2000);
 		}
 	}
 	return;
@@ -374,7 +374,7 @@ void CSaveDataToDBDlg::SaveRemote( void )
 		}
 		else
 		{
-			Sleep(5000);
+			Sleep(2000);
 		}
 	}
 	return;
@@ -548,7 +548,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 		}
 		else
 		{
-			Sleep(5000);
+			Sleep(2000);
 		}
 	}
 }
@@ -611,7 +611,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 		}
 		else
 		{
-			Sleep(5000);
+			Sleep(2000);
 		}
 	}
 }
@@ -1196,6 +1196,8 @@ void CSaveDataToDBDlg::OnBnClickedButtonShowimg()
 			pMyRecord->MoveNext();
 		}
 
+		pMyRecord->Close();
+		pMyRecord = NULL;
 	}
 	catch(_com_error e)
 	{
@@ -1203,6 +1205,8 @@ void CSaveDataToDBDlg::OnBnClickedButtonShowimg()
 		sprintf(errorInfo,"查询失败, 错误信息：%s, 错误描述：%s ",e.ErrorMessage(), (char*)e.Description());		
 		MessageBox(errorInfo);
 	}
+	pMyConnect->Close();
+	pMyConnect = NULL;
 	GetDlgItem(ID_BUTTON_SHOWIMG)->EnableWindow(TRUE);
 }
 
@@ -1354,7 +1358,7 @@ void CSaveDataToDBDlg::StopToSaveDBData()
 	
 	while(m_lsSaveLocal.size() > 0 || m_lsSaveRemote.size() > 0)
 	{
-		Sleep(1000);				//等待将队列中的数据保存到本地
+		Sleep(3000);				//等待将队列中的数据保存到本地
 	}
 	m_bSaveLocalThreadExit = true ;
 	m_bSaveRemoteThreadExit = true;
