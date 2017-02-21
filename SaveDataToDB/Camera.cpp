@@ -228,6 +228,9 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	//加入结果队列中
 	if (m_ResultList.size() < MAX_LIST_COUNT)
 	{
+		char chLog[260] = {0};
+		sprintf(chLog, "CarID:%08d, ListNo:%s, 车牌:%s  加入结果缓存队列", m_Result->dwCarID, m_Result->chListNo, m_Result->chPlateNO);
+		WriteLog(chLog);
 		m_ResultList.push_back(m_Result);
 
 		long previousCount;
@@ -1519,15 +1522,17 @@ int CCamera::SaveResultThreadFunction()
 			continue;
 		 // 保存结果
 		//saveImage(tempResult);
-		saveImage(tempResult, SAVE_TO_BACKUP_DIRECTORY);
+		//saveImage(tempResult, SAVE_TO_BACKUP_DIRECTORY);  //注释于2015-07-20
 
 		if (NULL != tempResult)
 		{
 			//将结果加入数据库队列中
 			if (m_bDbEnable)
-			{
-				CameraResult *tempLocalResult =NULL;
+			{				
+				WriteLog("从缓存队列中取出数据，加入本地数据库队列");
+				
 				EnterCriticalSection(g_csLocalCriticalSection);
+				CameraResult *tempLocalResult =NULL;
 				tempLocalResult = new CameraResult(*tempResult);
 				if(NULL != tempLocalResult)
 				{
@@ -1538,6 +1543,8 @@ int CCamera::SaveResultThreadFunction()
 
 			if (m_bMidDbEnable)
 			{
+				WriteLog("从缓存队列中取出数据，加入中间数据库队列");
+
 				EnterCriticalSection(g_csRemoteCriticalSection);
 				CameraResult *tempRemoteResult = NULL;
 				tempRemoteResult =new CameraResult(*tempResult);

@@ -35,6 +35,13 @@ CSaveDataToDBApp theApp;
 
 BOOL CSaveDataToDBApp::InitInstance()
 {
+	::CreateMutex(NULL, TRUE, "SaceDataToDB");
+	if(ERROR_ALREADY_EXISTS == GetLastError())
+	{
+		AfxMessageBox("该程序已经运行,请先关闭运行中的程序再打开！");
+		exit(0);
+	}
+
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
 	//则需要 InitCommonControls()。否则，将无法创建窗口。
