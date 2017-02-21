@@ -37,15 +37,15 @@ public:
 
 	HANDLE m_hReadLocal;
 	HANDLE m_hSaveLocal;
-	HANDLE m_hRLocalMutex;
-	HANDLE m_HWLocalMutex;
+	//HANDLE m_hRLocalMutex;
+	//HANDLE m_HWLocalMutex;
 	std::list<CameraResult*> m_lsReadLocal;
 	std::list<CameraResult*> m_lsSaveLocal;
 
 	HANDLE m_hReadRemote;
 	HANDLE m_hSaveRemote;
-	HANDLE m_hRRemoteMutex;
-	HANDLE m_HWRemoteMutex;
+	//HANDLE m_hRRemoteMutex;
+	//HANDLE m_HWRemoteMutex;
 	std::list<CameraResult*>m_lsReadRemote;
 	std::list<CameraResult*>m_lsSaveRemote;
 

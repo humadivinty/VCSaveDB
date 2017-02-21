@@ -112,8 +112,13 @@ BOOL CSaveDataToDBDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 	GdiplusStartup(&m_gdiplusToken,&StartupInput,NULL); 
+
 	InitializeCriticalSection(&m_csDlgLog);
 	InitializeCriticalSection(&m_csDlgRemoteLog);
+	InitializeCriticalSection(&m_csReadLocal);
+	InitializeCriticalSection(&m_csSaveLocal);
+	InitializeCriticalSection(&m_csReadRemote);
+	InitializeCriticalSection(&m_csSaveRemote);
 
 	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
 	{
@@ -125,17 +130,6 @@ BOOL CSaveDataToDBDlg::OnInitDialog()
 	m_bExit  = false;
 	m_bSaveLocalThreadExit = false;				//保存本地库数据队列的数据到硬盘的标志位
 	m_bSaveRemoteThreadExit = false;			//保存中间库数据队列的数据到硬盘的标志位
-	m_hRLocalMutex = CreateMutex(NULL, TRUE, NULL);
-	m_HWLocalMutex = CreateMutex(NULL, TRUE, NULL);
-	m_hRRemoteMutex = CreateMutex(NULL, TRUE, NULL);
-	m_HWRemoteMutex = CreateMutex(NULL, TRUE, NULL);
-
-	InitializeCriticalSection(&m_csReadLocal);
-	InitializeCriticalSection(&m_csSaveLocal);
-	InitializeCriticalSection(&m_csReadRemote);
-	InitializeCriticalSection(&m_csSaveRemote);
-
-
 
 	return TRUE;  // 除非设置了控件的焦点，否则返回 TRUE
 }
@@ -1100,28 +1094,6 @@ void CSaveDataToDBDlg::OnClose()
 		m_hCircleDelete = NULL;
 	}
 
-	if (m_hRLocalMutex)
-	{
-		CloseHandle(m_hRLocalMutex);
-	}
-	if (m_HWLocalMutex)
-	{
-		CloseHandle(m_HWLocalMutex);
-	}
-	if (m_hRRemoteMutex)
-	{
-		CloseHandle(m_hRRemoteMutex);
-	}
-	if (m_HWRemoteMutex)
-	{
-		CloseHandle(m_HWRemoteMutex);
-	}
-
-	m_hRLocalMutex = NULL;	
-	m_HWLocalMutex = NULL;	
-	m_hRRemoteMutex = NULL;	
-	m_HWRemoteMutex = NULL;
-
 	DeleteCriticalSection(&m_csReadLocal);
 	DeleteCriticalSection(&m_csSaveLocal);
 	DeleteCriticalSection(&m_csReadRemote);
@@ -1258,7 +1230,6 @@ void CSaveDataToDBDlg::ShowImg(CWnd * pWnd, PBYTE PBImgData, long iImgDataLen)
 	//创建位图
 	Bitmap bmpSrc(pStream);
 
-
 	//设置显示图片的窗口的宽度和高度
 	RECT rtWnd;
 	pWnd->GetWindowRect(&rtWnd);
@@ -1393,6 +1364,7 @@ void CSaveDataToDBDlg::OnBnClickedButton1()
 {
 	// TODO: Add your control notification handler code here
 	GetDlgItem(IDC_BUTTON_StarUpDateDB)->EnableWindow(FALSE);
+	GetDlgItem(IDCANCEL)->EnableWindow(FALSE);
 
 	//memset(g_CameraGroup, 0, sizeof(g_CameraGroup));
 	LocalDataBaseControler tempDB;
@@ -1428,6 +1400,8 @@ void CSaveDataToDBDlg::OnBnClickedButton1()
 	m_hSaveStatusToDB = (HANDLE)_beginthreadex(NULL, 0, &ThreadSafeStatuToDB, this, 0,NULL);
 	//创建循环覆盖线程
 	m_hCircleDelete = (HANDLE)_beginthreadex(NULL, 0, &ThreadCirclelaryDelete, this, 0, NULL);
+
+	GetDlgItem(IDCANCEL)->EnableWindow(TRUE);
 }
 
 void CSaveDataToDBDlg::OnBnClickedCancel()

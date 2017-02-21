@@ -189,28 +189,35 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 		if (NULL != m_Result)
 		{
 			//将结果加入队列中
-			CameraResult *tempLocalResult =NULL;
-			CameraResult *tempRemoteResult = NULL;
-
 			//WaitForSingleObject(g_hLocalListMutex, 70l);				//2015-01-19
-			EnterCriticalSection(g_csLocalCriticalSection);
-			tempLocalResult = new CameraResult(*m_Result);
-			if(NULL != tempLocalResult)
+			if (m_bDbEnable)
 			{
-				g_lsLocalData->push_back(tempLocalResult);
+				CameraResult *tempLocalResult =NULL;
+				EnterCriticalSection(g_csLocalCriticalSection);
+				tempLocalResult = new CameraResult(*m_Result);
+				if(NULL != tempLocalResult)
+				{
+					g_lsLocalData->push_back(tempLocalResult);
+				}
+				LeaveCriticalSection(g_csLocalCriticalSection);
 			}			
 			//ReleaseMutex(g_hLocalListMutex);							//2015-01-19
-			LeaveCriticalSection(g_csLocalCriticalSection);
+			
 
 			//WaitForSingleObject(g_hRemoteListMutex, 70l);			//2015-01-19
-			EnterCriticalSection(g_csRemoteCriticalSection);
-			tempRemoteResult =new CameraResult(*m_Result);
-			if (NULL != tempRemoteResult)
+			if (m_bMidDbEnable)
 			{
-				g_lsRemoteData->push_back(tempRemoteResult);
+				EnterCriticalSection(g_csRemoteCriticalSection);
+				CameraResult *tempRemoteResult = NULL;
+				tempRemoteResult =new CameraResult(*m_Result);
+				if (NULL != tempRemoteResult)
+				{
+					g_lsRemoteData->push_back(tempRemoteResult);
+				}
+				LeaveCriticalSection(g_csRemoteCriticalSection);
 			}
 			//ReleaseMutex(g_hRemoteListMutex);						//2015-01-19
-			LeaveCriticalSection(g_csRemoteCriticalSection);
+			
 		}
 		m_Result = NULL;
 		ReleaseSemaphore(m_hSemaphore,1,&previousCount);	
