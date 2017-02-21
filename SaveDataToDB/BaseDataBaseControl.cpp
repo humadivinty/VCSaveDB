@@ -53,6 +53,7 @@ HRESULT BaseDataBaseControl::ConnectToDB(char* ConnectInfo)
 		if (NULL != m_pConnectionPtr)
 		{
 			hr = CloseDBConnect();
+			//Sleep(5* 1000);
 		}
 		EnterCriticalSection(&m_csConnect);		
 		hr = m_pConnectionPtr.CreateInstance(_uuidof(Connection));
@@ -63,7 +64,7 @@ HRESULT BaseDataBaseControl::ConnectToDB(char* ConnectInfo)
 			return hr;
 		}
 		char chConnectString[MAX_PATH] = {0};
-		m_pConnectionPtr->CommandTimeout = 200;
+		//m_pConnectionPtr->CommandTimeout = 200;
 		m_pConnectionPtr->CursorLocation = adUseClient;
 		m_pConnectionPtr->IsolationLevel = adXactReadCommitted;
 		//sprintf(chConnectString, "Provider = SQLOLEDB; Server = %s; DataBase=%s; uid=%s;pwd=%s", m_chServerIP, m_chDBName, m_chDBUserID, m_chDBPassword);
@@ -84,7 +85,8 @@ HRESULT BaseDataBaseControl::ConnectToDB(char* ConnectInfo)
 	}
 	catch (_com_error &e)
 	{
-		LeaveCriticalSection(&m_csConnect);
+		hr = S_FALSE;
+		LeaveCriticalSection(&m_csConnect);		
 		m_bIsConnect = false;
 		char errorInfo[MAX_PATH] = {0};
 		sprintf(errorInfo,"数据库连接失败, 错误信息：%s, 错误描述：%s ",e.ErrorMessage(), (char*)e.Description());

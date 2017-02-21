@@ -86,43 +86,45 @@ BEGIN
                     IDC_STATIC,38,37,154,29
 END
 
-IDD_SAVEDATATODB_DIALOG DIALOGEX 0, 0, 870, 419
+IDD_SAVEDATATODB_DIALOG DIALOGEX 0, 0, 731, 419
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_POPUP | 
     WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "SaveDataToDB"
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "查询流水号对应大图",ID_BUTTON_SHOWIMG,781,51,73,16
-    PUSHBUTTON      "退出程序",IDCANCEL,763,161,96,38
-    LISTBOX         IDC_LIST_L_MESSAGE,325,247,257,165,LBS_NOINTEGRALHEIGHT | 
+    DEFPUSHBUTTON   "查询流水号对应大图",ID_BUTTON_SHOWIMG,642,45,73,16
+    PUSHBUTTON      "退出程序",IDCANCEL,632,182,93,22
+    LISTBOX         IDC_LIST_L_MESSAGE,269,247,223,165,LBS_NOINTEGRALHEIGHT | 
                     WS_VSCROLL | WS_TABSTOP
-    LISTBOX         IDC_LIST_Remote_MESSAGE,593,247,266,165,
+    LISTBOX         IDC_LIST_Remote_MESSAGE,497,247,229,165,
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "本地数据库入库信息",IDC_STATIC,420,235,63,8
-    LTEXT           "中间数据库入库信息",IDC_STATIC,694,235,63,8
-    CONTROL         "",IDC_STATIC_SHOWPICTURE,"Static",SS_BLACKFRAME,325,17,
-                    257,216
-    EDITTEXT        IDC_EDIT_LISTNO,600,33,254,14,ES_AUTOHSCROLL
-    LTEXT           "图片显示",IDC_STATIC,437,7,28,8
-    GROUPBOX        "数据库连接测试",IDC_STATIC,593,77,266,78
-    EDITTEXT        IDC_EDIT_DBName,763,91,91,14,ES_AUTOHSCROLL
-    LTEXT           "服务器IP:",IDC_STATIC,594,97,29,8
-    EDITTEXT        IDC_EDIT_DBUserID,625,115,99,14,ES_AUTOHSCROLL
-    LTEXT           "数据库名称:",IDC_STATIC,724,97,38,8
-    CONTROL         "",IDC_IPADDRESS_DBSever,"SysIPAddress32",WS_TABSTOP,624,
-                    90,100,15
-    LTEXT           "数据库ID:",IDC_STATIC,594,121,31,8
-    LTEXT           "数据库密码:",IDC_STATIC,725,121,38,8
-    EDITTEXT        IDC_EDIT_DBPassWord,763,115,91,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "连接测试",IDC_BUTTON_DBTestConnect,781,138,73,14
-    GROUPBOX        "车辆大图查询",IDC_STATIC,593,13,266,59
-    PUSHBUTTON      "启动数据录入",IDC_BUTTON_StarUpDateDB,593,161,99,38
+    LTEXT           "本地数据库入库信息",IDC_STATIC,349,233,63,8
+    LTEXT           "中间数据库入库信息",IDC_STATIC,580,233,63,8
+    CONTROL         "",IDC_STATIC_SHOWPICTURE,"Static",SS_BLACKFRAME,269,17,
+                    223,216
+    EDITTEXT        IDC_EDIT_LISTNO,508,24,206,17,ES_AUTOHSCROLL
+    LTEXT           "图片显示",IDC_STATIC,366,7,28,8
+    GROUPBOX        "数据库连接测试",IDC_STATIC,497,72,228,107
+    EDITTEXT        IDC_EDIT_DBName,559,103,155,14,ES_AUTOHSCROLL
+    LTEXT           "服务器IP:",IDC_STATIC,506,87,29,8
+    EDITTEXT        IDC_EDIT_DBUserID,559,122,155,14,ES_AUTOHSCROLL
+    LTEXT           "数据库名称:",IDC_STATIC,506,109,38,8
+    CONTROL         "",IDC_IPADDRESS_DBSever,"SysIPAddress32",WS_TABSTOP,559,
+                    80,155,15
+    LTEXT           "数据库登录名:",IDC_STATIC,506,128,44,8
+    LTEXT           "数据库密码:",IDC_STATIC,506,148,38,8
+    EDITTEXT        IDC_EDIT_DBPassWord,559,143,154,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "连接测试",IDC_BUTTON_DBTestConnect,575,160,73,14
+    GROUPBOX        "车辆大图查询",IDC_STATIC,497,13,229,51
+    PUSHBUTTON      "启动数据录入",IDC_BUTTON_StarUpDateDB,497,182,96,22
     CONTROL         "",IDC_LIST_DEVICE,"SysListView32",LVS_ALIGNLEFT | 
-                    WS_BORDER | WS_TABSTOP,7,17,305,395
-    GROUPBOX        "启动设置",IDC_STATIC,593,208,266,25
+                    WS_BORDER | WS_TABSTOP,7,17,257,395
+    GROUPBOX        "启动设置",IDC_STATIC,497,209,229,25
     CONTROL         "下次启动程序时，自动启动数据录入",IDC_CHECK_AUTOCONECT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,730,216,126,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,594,218,126,10
+    CTEXT           "程序退出中，请稍后。。。",IDC_STATIC_EXITSHOW,298,117,
+                    165,69,SS_CENTERIMAGE
 END
 
 
@@ -132,8 +134,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,3
- PRODUCTVERSION 1,0,0,3
+ FILEVERSION 1,0,0,5
+ PRODUCTVERSION 1,0,0,5
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -150,12 +152,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "TODO: <公司名>"
             VALUE "FileDescription", "TODO: <文件说明>"
-            VALUE "FileVersion", "1.0.0.3-2015-02-03-01"
+            VALUE "FileVersion", "1.0.0.5-2015-02-13-01"
             VALUE "InternalName", "SaveDataToDB.exe"
             VALUE "LegalCopyright", "TODO: (C) <公司名>。保留所有权利。"
             VALUE "OriginalFilename", "SaveDataToDB.exe"
             VALUE "ProductName", "TODO: <产品名>"
-            VALUE "ProductVersion", "1.0.0.3"
+            VALUE "ProductVersion", "1.0.0.5-2015-02-13-01"
         END
     END
     BLOCK "VarFileInfo"
@@ -185,25 +187,20 @@ BEGIN
     IDD_SAVEDATATODB_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 863
         VERTGUIDE, 133
         VERTGUIDE, 264
         VERTGUIDE, 270
-        VERTGUIDE, 277
-        VERTGUIDE, 346
-        VERTGUIDE, 409
-        VERTGUIDE, 447
-        VERTGUIDE, 466
-        VERTGUIDE, 543
-        VERTGUIDE, 552
+        VERTGUIDE, 611
         TOPMARGIN, 7
         BOTTOMMARGIN, 412
         HORZGUIDE, 17
         HORZGUIDE, 72
+        HORZGUIDE, 95
+        HORZGUIDE, 117
         HORZGUIDE, 136
-        HORZGUIDE, 161
-        HORZGUIDE, 199
-        HORZGUIDE, 208
+        HORZGUIDE, 156
+        HORZGUIDE, 182
+        HORZGUIDE, 204
         HORZGUIDE, 233
         HORZGUIDE, 247
     END

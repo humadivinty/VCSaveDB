@@ -84,6 +84,8 @@ BEGIN_MESSAGE_MAP(CSaveDataToDBDlg, CDialog)
 	ON_BN_CLICKED(IDCANCEL, OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_CHECK_AUTOCONECT, OnBnClickedCheckAutoconect)
 	ON_NOTIFY(LVN_COLUMNCLICK, IDC_LIST_DEVICE, OnLvnColumnclickListDevice)
+//	ON_WM_SIZE()
+ON_WM_SETCURSOR()
 END_MESSAGE_MAP()
 
 
@@ -116,7 +118,10 @@ BOOL CSaveDataToDBDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
+	// TODO: 在此添加额外的初始化代码	
+	GetDlgItem(IDC_STATIC_EXITSHOW)->ShowWindow(SW_HIDE);
+	
+
 	GdiplusStartup(&m_gdiplusToken,&StartupInput,NULL); 
 
 	InitializeCriticalSection(&m_csDlgLog);
@@ -1154,7 +1159,18 @@ void CSaveDataToDBDlg::ShowRemotDBMessage( char* messageBuf )
 void CSaveDataToDBDlg::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
-	m_bExit  = true;
+	CMenu* psysMenu = GetSystemMenu(FALSE);
+	if(NULL != psysMenu)
+	{
+		psysMenu->EnableMenuItem(SC_CLOSE, TRUE);
+	}
+	GetDlgItem(IDC_BUTTON_DBTestConnect)->EnableWindow(FALSE);
+	GetDlgItem(ID_BUTTON_SHOWIMG)->EnableWindow(FALSE);	
+	
+	GetDlgItem(IDCANCEL)->ShowWindow(SW_HIDE);
+	GetDlgItem(IDC_STATIC_EXITSHOW)->ShowWindow(SW_SHOW);
+
+	m_bExit  = true;	
 
 	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
 	{
@@ -1374,6 +1390,7 @@ void CSaveDataToDBDlg::OnBnClickedButtonDbtestconnect()
 {
 	// TODO: Add your control notification handler code here
 	GetDlgItem(IDC_BUTTON_DBTestConnect)->EnableWindow(FALSE);
+	
 
 	CString strDBServerIP, strDBName, strDBUserID, strDBPassword;
 
@@ -1537,6 +1554,16 @@ void CSaveDataToDBDlg::OnBnClickedCancel()
 	// TODO: Add your control notification handler code here
 	GetDlgItem(IDCANCEL)->EnableWindow(FALSE);
 	SetDlgItemText(IDCANCEL, "程序退出中，请稍后。。。");
+	GetDlgItem(IDC_STATIC_EXITSHOW)->ShowWindow(SW_SHOW);
+
+	GetDlgItem(IDC_BUTTON_DBTestConnect)->EnableWindow(FALSE);
+	GetDlgItem(ID_BUTTON_SHOWIMG)->EnableWindow(FALSE);
+
+	CMenu* psysMenu = GetSystemMenu(FALSE);
+	if(NULL != psysMenu)
+	{
+		psysMenu->EnableMenuItem(SC_CLOSE, TRUE);
+	}
 
 	m_bExit = true;
 	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
@@ -1912,4 +1939,18 @@ int CALLBACK CSaveDataToDBDlg::MyCompareProc( LPARAM lParam1, LPARAM lParam2, LP
 	}
 
 	return nRet;
+}
+
+BOOL CSaveDataToDBDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	if (m_bExit)
+	{
+		HCURSOR newCurser = LoadCursor(NULL, IDC_WAIT);
+		::SetCursor(newCurser);
+		return TRUE;
+	}
+
+	return CDialog::OnSetCursor(pWnd, nHitTest, message);
 }

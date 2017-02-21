@@ -68,7 +68,7 @@ HRESULT RemoteDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 			char chReConnectInfo[256] = {0};
 			hr =ConnectToDB(chReConnectInfo);
 			char chNormalConnectInfo[MAX_PATH] = {0};
-			if (FAILED(hr))
+			if (S_OK != hr)
 			{
 				sprintf(chNormalConnectInfo,"SaveNormalDataToDB:: ÖØÁ¬Ê§°Ü£º%s", chReConnectInfo);
 				RemoteDBWriteLog(chNormalConnectInfo);
@@ -131,6 +131,11 @@ HRESULT RemoteDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 			RemoteDBWriteLog(szLog1);
 			hr=S_OK;
 		}
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		{
+			m_pConnectionPtr->Close();
+		}
+		//Sleep(5*1000);
 	}
 	return hr;
 }
@@ -152,7 +157,7 @@ HRESULT RemoteDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevi
 			char chReConnectInfo[256] = {0};
 			char chStatusConnectInfo[256] = {0};
 			hr =ConnectToDB(chReConnectInfo);
-			if (FAILED(hr))
+			if (S_OK != hr)
 			{
 				sprintf(chStatusConnectInfo, "SaveDeviceStatusToDB:: ÖØÁ¬Ê§°Ü£º%s", chReConnectInfo);
 				RemoteDBWriteLog(chStatusConnectInfo);
@@ -198,7 +203,13 @@ HRESULT RemoteDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevi
 		{
 			hr = S_FALSE;
 		}
-	}
+
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		{
+			m_pConnectionPtr->Close();
+		}
+		//Sleep(5*1000);
+	}	
 	return hr;
 }
 

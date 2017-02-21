@@ -138,7 +138,12 @@ HRESULT LocalDataBaseControler::SaveBigImageToDB(unsigned char* pImage, char* Li
 			//exit(0);
 		}
 		LocalDBWriteLog("SaveBigImageToDB::Ë¯5ÃëÖÓ");
-		Sleep(5*1000);
+
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		{
+			m_pConnectionPtr->Close();
+		}
+		//Sleep(5*1000);
 		//exit(0);
 		return hr;
 	}
@@ -226,13 +231,12 @@ HRESULT LocalDataBaseControler::SaveSmallImageToDB( unsigned char* pImage, char*
 			//AfxMessageBox("SaveSmallImageToDB::´ÅÅÌÒÑÂúÇëÇåÀí´ÅÅÌÊÍ·Å´ÅÅÌ¿Õ¼ä",0,0);
 		}
 
-		if(strstr(strError,"3121"))
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") || strstr(strError,"3121"))
 		{
 			LocalDBWriteLog("SaveSmallImageToDB::²éÑ¯³¬Ê±");
-			//exit(0);
+			m_pConnectionPtr->Close();
 		}
-
-		Sleep(5*1000);
+		//Sleep(5*1000);
 		//exit(0);
 		//return hr;
 	}
@@ -298,6 +302,11 @@ HRESULT LocalDataBaseControler::SaveDeviceStatusToDB( char* chListNo, int iDevic
 		{
 			hr = S_FALSE;
 		}
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		{
+			m_pConnectionPtr->Close();
+		}
+		//Sleep(5*1000);
 	}
 	return hr;
 }
@@ -318,7 +327,7 @@ HRESULT LocalDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 			char chReConnectInfo[256] = {0};
 			hr =ConnectToDB(chReConnectInfo);
 			char strConnectInfo[MAX_PATH] = {0};
-			if (FAILED(hr))
+			if (S_OK != hr)
 			{
 				sprintf(strConnectInfo, "SaveNormalDataToDB:: ÖØÁ¬Ê§°Ü£º%s", chReConnectInfo);
 				LocalDBWriteLog(strConnectInfo);
@@ -381,6 +390,12 @@ HRESULT LocalDataBaseControler::SaveNormalDataToDB( CameraResult* pRecord )
 			LocalDBWriteLog(szLog1);
 			hr=S_OK;
 		}
+
+		if (strstr(strErrorMessage,"Ò»°ãÐÔÍøÂç´íÎó") || strstr(strErrorMessage,"³¬Ê±") )
+		{
+			m_pConnectionPtr->Close();
+		}
+		//Sleep(5*1000);
 	}
 	return hr;
 }

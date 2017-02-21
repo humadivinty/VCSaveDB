@@ -158,4 +158,6 @@ public:
 
 	ListItemData m_ListCtrlDataGroup[MAX_PATH];
 
+//	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 };
