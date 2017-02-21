@@ -13,11 +13,13 @@ public:
 	CCamera(char* IP);	
 	~CCamera(void);
 
+	std::string m_strIp;									//设备IP
+
 private:
 	CLSID m_jpgClsid;
 	HANDLE m_hStatusCheckThread;				//检查设备状态线程
 	HANDLE m_hSaveResultThread;				//保存结果到硬盘线程
-	std::string m_strIp;									//设备IP
+
 	bool m_bLogEnable;									//日志开关
 	bool m_bDbEnable;									//数据库开关
 	bool m_bMidDbEnable;								//中间数据库开关

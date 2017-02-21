@@ -98,16 +98,16 @@ CCamera::CCamera(char* IP)
 }
 
 CCamera::~CCamera(void)
-{
-	m_bExit = true;
+{	
 	CloseDevice();
+	
+	ReleaseResult();
+	m_bExit = true;
 	if (NULL != m_Result)
 	{
 		delete m_Result;
 		m_Result = NULL;
 	}
-	ReleaseResult();
-
 	DeleteCriticalSection( &m_csResult );
 	DeleteCriticalSection(&m_csLog);
 }
@@ -115,43 +115,54 @@ CCamera::~CCamera(void)
 int CCamera::RecordInfoBegin(DWORD dwCarID)
 {
 	EnterCriticalSection(&m_csResult);
-	m_bResultComplete = false;
-
-	m_Result = NULL;
-	m_Result = new CameraResult();
-
-	if (NULL != m_Result)
+	try
 	{
-		m_Result->dwCarID = dwCarID;
-		sprintf(m_Result->chDeviceIp, m_strIp.c_str());
+		m_bResultComplete = false;
 
-		//生成序列号
-		SYSTEMTIME st;	
-		GetLocalTime(&st);
-		WORD wMilliseconds_Temp = st.wMilliseconds/10;
-		GUID guid;
-		
-		std::string strIPTemp(m_Result->chDeviceIp);
-		int iTempIP1 = 0;
-		int iTempIP2 = 0;
-		int iTempIP3 = 0;
-		int ITempIP4 = 0;
-		sscanf(strIPTemp.c_str(),"%d.%d.%d.%d",&iTempIP1,&iTempIP2,&iTempIP3,&ITempIP4);
+		m_Result = NULL;
+		m_Result = new CameraResult();
 
-		if (S_OK == ::CoCreateGuid(&guid))
+		if (NULL != m_Result)
 		{
-			sprintf(m_Result->chListNo, "%04X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X"
-				,st.wYear, st.wMonth, st.wDay
-				,st.wHour, st.wMinute
-				,st.wSecond, wMilliseconds_Temp
-				,iTempIP1, iTempIP2
-				,iTempIP3, ITempIP4, guid.Data4[4], guid.Data4[5]
-				,guid.Data4[6], guid.Data4[7]
-				);
+			m_Result->dwCarID = dwCarID;
+			sprintf(m_Result->chDeviceIp, m_strIp.c_str());
+
+			//生成序列号
+			SYSTEMTIME st;	
+			GetLocalTime(&st);
+			WORD wMilliseconds_Temp = st.wMilliseconds/10;
+			GUID guid;
+
+			std::string strIPTemp(m_Result->chDeviceIp);
+			int iTempIP1 = 0;
+			int iTempIP2 = 0;
+			int iTempIP3 = 0;
+			int ITempIP4 = 0;
+			sscanf(strIPTemp.c_str(),"%d.%d.%d.%d",&iTempIP1,&iTempIP2,&iTempIP3,&ITempIP4);
+
+			if (S_OK == ::CoCreateGuid(&guid))
+			{
+				sprintf(m_Result->chListNo, "%04X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X"
+					,st.wYear, st.wMonth, st.wDay
+					,st.wHour, st.wMinute
+					,st.wSecond, wMilliseconds_Temp
+					,iTempIP1, iTempIP2
+					,iTempIP3, ITempIP4, guid.Data4[4], guid.Data4[5]
+					,guid.Data4[6], guid.Data4[7]
+					);
+			}
+
 		}
-
 	}
-
+	catch (...)
+	{
+		WriteLog("创建结果对象时出现异常，丢弃该结果");
+		if (NULL != m_Result)
+		{
+			delete m_Result;
+			m_Result = NULL;
+		}
+	}
 	LeaveCriticalSection(&m_csResult);
 	return 0;
 }
@@ -626,8 +637,7 @@ DWORD WINAPI StatusCheckThread(LPVOID lpParam)
 
 //解析附加信息
 void CCamera::AnalyseRecord(CameraResult* record)
-{
-	//WriteLog("DLL--CQ_PATH_AnalyseRecord--获取车牌信息");
+{	
 	if (strstr(record->chPlateNO, "无车牌"))
 	{
 		record->iPlateColor = 0;
@@ -1042,14 +1052,15 @@ int CCamera::DisConnect()
 }
 int CCamera::CloseDevice()
 {
-	m_bStatusCheckThreadExit = true;
+	DisConnect();
 
-	m_bExit = true;
+	m_bStatusCheckThreadExit = true;	
 
 	//Sleep(1000);
 	if (WaitForSingleObject(m_hStatusCheckThread, 2000) == WAIT_OBJECT_0)
 	{
-	}
+	}	
+
 	if (m_hStatusCheckThread != NULL)
 	{
 		CloseHandle(m_hStatusCheckThread);
@@ -1057,14 +1068,22 @@ int CCamera::CloseDevice()
 	}
 	
 	//结束结果保存线程
+	while(m_ResultList.size()>0)
+	{
+		Sleep(500);
+	}
+	m_bExit = true;
 	if (WaitForSingleObject(m_hSaveResultThread, 2000) == WAIT_OBJECT_0)
 	{
+		
 	}
+	
 	if (m_hSaveResultThread != NULL)
 	{
 		TerminateThread(m_hSaveResultThread, -1);
 		CloseHandle(m_hSaveResultThread);
 		m_hSaveResultThread = NULL;
+		WriteLog("设备保存结果线程退出完毕");
 	}
 
 	//删除信号量对象
@@ -1072,9 +1091,7 @@ int CCamera::CloseDevice()
 	{
 		CloseHandle(m_hSemaphore);
 		m_hSemaphore = NULL;
-	}
-
-	DisConnect();
+	}	
 
 	char chDisConnectLog1[MAX_PATH] = {0};
 	sprintf(chDisConnectLog1, "设备%s 断开连接成功", m_strIp.c_str());
@@ -1869,8 +1886,8 @@ bool CCamera::OverlayStringToImg( CameraIMG* recordSource, char* chText1, char* 
 
 	if (firstBmp.GetLastStatus() == Ok && bmpDest.GetLastStatus() == Ok)
 	{
-		CLSID jpgClsid;
-		GetEncoderClsid(L"image/jpeg", &jpgClsid);
+		//CLSID jpgClsid;
+		//GetEncoderClsid(L"image/jpeg", &jpgClsid);
 		LARGE_INTEGER liTemp = {0};
 		ULARGE_INTEGER uliTemp = { 0 };
 		RectF rfMString1(20,20, (REAL)firstBmp.GetWidth(), (REAL)firstBmp.GetHeight());
@@ -1897,7 +1914,8 @@ bool CCamera::OverlayStringToImg( CameraIMG* recordSource, char* chText1, char* 
 		grone.DrawString(CStringW(chText4), -1 ,&fontTmp, rfMString4,&fmtString4, &solidBrush2);
 		pStreamOut->SetSize(uliTemp);
 		pStreamOut->Seek(liTemp, STREAM_SEEK_SET, NULL );
-		if (Ok != bmpDest.Save(pStreamOut, &jpgClsid) )
+		//if (Ok != bmpDest.Save(pStreamOut, &jpgClsid) )
+		if (Ok != bmpDest.Save(pStreamOut, &m_jpgClsid) )
 		{
 			bResult = false;
 			if (NULL != pStreamIn)

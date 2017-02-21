@@ -6,6 +6,18 @@
 #include <list>
 #include "CameraReault.h"
 #include "afxcmn.h"
+#include "afxwin.h"
+
+
+struct ListItemData
+{
+	CString strLineNum;
+	CString strDeviceID;
+	CString strDeviceIP;
+	CString strDeviceStatus;
+	CString strLocalResultCount;
+	CString strRemoteResultCount;
+};
 
 // CSaveDataToDBDlg 对话框
 class CSaveDataToDBDlg : public CDialog
@@ -71,6 +83,7 @@ public:
 	bool m_bExit;
 	bool m_bSaveLocalThreadExit;
 	bool m_bSaveRemoteThreadExit;
+	bool m_bAutoInsert;
 	int m_iStatusUpdateInterval;
 	int m_iBackUpResultDays;
 	int m_iBackUpLogDays;
@@ -87,7 +100,7 @@ public:
 	CRITICAL_SECTION m_csSaveLocal;
 	CRITICAL_SECTION m_csReadRemote;
 	CRITICAL_SECTION m_csSaveRemote;
-
+	CRITICAL_SECTION m_csUpdateListCtrl;
 
 public:
 	static unsigned __stdcall ThreadSaveLocal(void* TheParam);
@@ -130,17 +143,19 @@ public:
 	afx_msg void OnBnClickedButtonShowimg();
 	void ShowImg(CWnd * pWnd, PBYTE PBImgData, long iImgDataLen);
 
+	bool UpdateListCtrlView(CString& strDeviceID, CString& strCameraIP, CString& strCamerStatus, CString& strLocalResultCount, CString& strRemoteResultCount);
 
-	//long m_lDlgWidth;
-	//long m_lDlgHeight;
-	//long m_lWidth;
-	//long m_lHeight;
-	//float m_flMutipleWidth;
-	//float m_flMutipleHeight;
-	//bool m_bsizeChangeFlag;
-	//void ReSize(int iID);
-	/*afx_msg void OnSize(UINT nType, int cx, int cy);*/
 	afx_msg void OnBnClickedButtonDbtestconnect();
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedCancel();
+	// //用于显示设备状态
+	CListCtrl m_lsListCtrl;
+	// //勾选时下次启动程序后自动启动程序录入
+	CButton m_buttonCheckBox;
+	afx_msg void OnBnClickedCheckAutoconect();
+	afx_msg void OnLvnColumnclickListDevice(NMHDR *pNMHDR, LRESULT *pResult);
+	static int CALLBACK MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+
+	ListItemData m_ListCtrlDataGroup[MAX_PATH];
+
 };

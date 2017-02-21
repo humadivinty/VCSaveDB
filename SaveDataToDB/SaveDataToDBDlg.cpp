@@ -17,6 +17,8 @@
 
 #import "c:\program files\common files\system\ado\msado15.dll" no_namespace rename ("EOF", "adoEOF") 
 
+bool asscendingSort(CString& str1,CString &str2);
+
 CCamera *g_CameraGroup[MAX_CAMERA_COUNT];
 
 
@@ -66,6 +68,8 @@ void CSaveDataToDBDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST_L_MESSAGE, m_MessageListBox);
 	DDX_Control(pDX, IDC_LIST_Remote_MESSAGE, m_listBoxRemoteDB);
+	DDX_Control(pDX, IDC_LIST_DEVICE, m_lsListCtrl);
+	DDX_Control(pDX, IDC_CHECK_AUTOCONECT, m_buttonCheckBox);
 }
 
 BEGIN_MESSAGE_MAP(CSaveDataToDBDlg, CDialog)
@@ -78,6 +82,8 @@ BEGIN_MESSAGE_MAP(CSaveDataToDBDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_DBTestConnect, OnBnClickedButtonDbtestconnect)
 	ON_BN_CLICKED(IDC_BUTTON_StarUpDateDB, OnBnClickedButton1)
 	ON_BN_CLICKED(IDCANCEL, OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_CHECK_AUTOCONECT, OnBnClickedCheckAutoconect)
+	ON_NOTIFY(LVN_COLUMNCLICK, IDC_LIST_DEVICE, OnLvnColumnclickListDevice)
 END_MESSAGE_MAP()
 
 
@@ -119,17 +125,59 @@ BOOL CSaveDataToDBDlg::OnInitDialog()
 	InitializeCriticalSection(&m_csSaveLocal);
 	InitializeCriticalSection(&m_csReadRemote);
 	InitializeCriticalSection(&m_csSaveRemote);
+	InitializeCriticalSection(&m_csUpdateListCtrl);
+
+	m_hReadLocal = NULL;
+	m_hSaveLocal = NULL;
+	m_hReadRemote = NULL;
+	m_hSaveRemote = NULL;
+	m_hSaveLocalDB = NULL;
+	m_hSaveRemoteDB =NULL;
+	m_hSaveStatusToDB = NULL;
+	m_hCircleDelete = NULL;
+
+
+	DWORD dwStyle = GetWindowLong(m_lsListCtrl.m_hWnd, GWL_STYLE);
+	dwStyle &= ~(LVS_TYPEMASK);
+	dwStyle &= ~(LVS_EDITLABELS);
+	dwStyle |= LVS_REPORT;
+	SetWindowLong(m_lsListCtrl.m_hWnd, GWL_STYLE, dwStyle);
+
+	//选中某行使整行高亮
+	dwStyle = m_lsListCtrl.GetExtendedStyle();
+	dwStyle |= LVS_EX_FULLROWSELECT;
+	dwStyle |= LVS_EX_GRIDLINES;	
+	m_lsListCtrl.SetExtendedStyle(dwStyle);
+
+	m_lsListCtrl.InsertColumn(0,"序号",LVCFMT_CENTER, 50);
+	m_lsListCtrl.InsertColumn(1,"DeviceID",LVCFMT_CENTER, 100);
+	m_lsListCtrl.InsertColumn(2,"设备IP",LVCFMT_CENTER, 100);
+	m_lsListCtrl.InsertColumn(3,"连接状态",LVCFMT_CENTER,100);
+	m_lsListCtrl.InsertColumn(4,"上传本地库结果数量",LVCFMT_CENTER,150);
+	m_lsListCtrl.InsertColumn(5,"上传中间库结果数量",LVCFMT_CENTER, 150);
+
+//m_lsListCtrl.InsertItem(0, "kkk");
+//m_lsListCtrl.SetItemText(0,1, "kkkk");
+//
+//int thesize =  m_lsListCtrl.GetItemCount();
+
 
 	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
 	{
 		g_CameraGroup[i] = NULL;
 	}
 
-	::CoInitialize(NULL);
+	::CoInitialize(NULL);	
 	ReadInitFileDlg();
 	m_bExit  = false;
 	m_bSaveLocalThreadExit = false;				//保存本地库数据队列的数据到硬盘的标志位
 	m_bSaveRemoteThreadExit = false;			//保存中间库数据队列的数据到硬盘的标志位
+
+	if (m_bAutoInsert)
+	{
+		m_buttonCheckBox.SetCheck(1);
+		OnBnClickedButton1();
+	}
 
 	return TRUE;  // 除非设置了控件的焦点，否则返回 TRUE
 }
@@ -287,6 +335,21 @@ void CSaveDataToDBDlg::ReadLocal( void )
 					tempResult = NULL;
 				}
 				//ReleaseMutex(m_hRLocalMutex);					//2015-01-19
+				
+				LeaveCriticalSection(&m_csReadLocal);
+				continue;
+			}
+			ULONGLONG ulLenth = theLoadFile.GetLength();
+			if (ulLenth<= 100)
+			{
+				theLoadFile.Close();
+				DeleteFile(strtmpFileName);
+
+				char chLogBuf[256] = {0};
+				sprintf(chLogBuf, "%s数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
+				strtmpFileName.ReleaseBuffer();
+				WriteDlgLog(chLogBuf);
+
 				LeaveCriticalSection(&m_csReadLocal);
 				continue;
 			}
@@ -432,6 +495,21 @@ void CSaveDataToDBDlg::ReadRemote( void )
 				LeaveCriticalSection(&m_csReadRemote);
 				continue;
 			}
+			//if (theRemoteFile.GetLength() <= 10)
+			ULONGLONG ulLenth = theRemoteFile.GetLength();
+			if ( ulLenth<= 100)
+			{
+				theRemoteFile.Close();
+				DeleteFile(strtmpFileName);
+
+				char chLogBuf[256] = {0};
+				sprintf(chLogBuf, "%s数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
+				strtmpFileName.ReleaseBuffer();
+				WriteDlgRemotLog(chLogBuf);
+
+				LeaveCriticalSection(&m_csReadLocal);
+				continue;
+			}
 			CArchive theLoadArchive(&theRemoteFile, CArchive::load);
 			(*tempResult).Serialize(theLoadArchive);
 			theLoadArchive.Close();
@@ -500,6 +578,16 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				sprintf(chNormalDataBuf, "本地库保存成功, listNo = %s", tempResult->chListNo);
 				ShowMessage(chNormalDataBuf);
 				WriteDlgLog(chNormalDataBuf);
+
+				CString strDeviceID;
+				strDeviceID.Format("%d", tempResult->iDeviceID);
+				CString strDeviceIP(tempResult->chDeviceIp);
+				CString strDeviceStatus;
+				CString strLocalResultCount("1");
+				CString strRemoteResultCount;
+				UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strLocalResultCount, strRemoteResultCount);
+
+
 				hr1 = LocalDB.SaveBigImageToDB(tempResult->CIMG_FullImage.pbImgData, tempResult->chListNo, tempResult->CIMG_FullImage.dwImgSize);
 				if(S_OK != hr1)
 				{
@@ -590,6 +678,14 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 			hr1 = RemoteDB.SaveNormalDataToDB(tempResult);
 			if (S_OK == hr1)
 			{
+				CString strDeviceID;
+				strDeviceID.Format("%d", tempResult->iDeviceID);
+				CString strDeviceIP(tempResult->chDeviceIp);
+				CString strDeviceStatus;
+				CString strLocalResultCount;
+				CString strRemoteResultCount("1");
+				UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strLocalResultCount, strRemoteResultCount);
+				
 				sprintf(chRemotDBInfo, "流水信息保存成功，流水号LisNo = %s ", tempResult->chListNo);
 				ShowRemotDBMessage(chRemotDBInfo);
 				WriteDlgRemotLog(chRemotDBInfo);
@@ -691,6 +787,17 @@ void CSaveDataToDBDlg::SafeStatuToDB( void )
 					{
 						sprintf(chCameraStatu, "连接正常");
 					}
+					//UpdateListCtrlView()
+
+					//2015-01-27 用于显示设备列表的代码
+					CString strDeviceID;
+					strDeviceID.Format("%d", g_CameraGroup[i]->m_iDiviceID);
+					CString strDeviceIP(g_CameraGroup[i]->m_strIp.c_str());
+					CString strDeviceStatus(chCameraStatu);
+					CString strResultCount;
+					UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strResultCount, strResultCount);
+
+
 					if (m_bLocalDBEnable)
 					{
 						LocalDB.SaveDeviceStatusToDB(szGUID, g_CameraGroup[i]->m_iDiviceID, chCameraStatu, strCreateTime, iStatu);
@@ -702,6 +809,7 @@ void CSaveDataToDBDlg::SafeStatuToDB( void )
 				}
 			}
 		}		
+		Sleep(2000);
 	}
 	if (m_bLocalDBEnable)
 	{
@@ -978,6 +1086,10 @@ void CSaveDataToDBDlg::ReadInitFileDlg( void )
 	//获取数据库密码
 	GetPrivateProfileStringA("LocalDataBase","DBPassword","123456",m_chDBPassword,256,chIniFileName);
 	WritePrivateProfileStringA("LocalDataBase","DBPassword",m_chDBPassword,chIniFileName);
+
+	//下次运行时自启动数据录入
+	int iAutoRun =GetPrivateProfileIntA("AutoRun", "RunEnable", 0, chIniFileName);	
+	m_bAutoInsert = (iAutoRun > 0) ?  true : false;
 }
 
 void CSaveDataToDBDlg::WriteDlgLog( char* logBuf )
@@ -1100,11 +1212,13 @@ void CSaveDataToDBDlg::OnClose()
 	DeleteCriticalSection(&m_csSaveLocal);
 	DeleteCriticalSection(&m_csReadRemote);
 	DeleteCriticalSection(&m_csSaveRemote);
+	
 
 	Gdiplus::GdiplusShutdown(m_gdiplusToken);
 	::CoUninitialize();
 	DeleteCriticalSection(&m_csDlgLog);
 	DeleteCriticalSection(&m_csDlgRemoteLog);
+	DeleteCriticalSection(&m_csUpdateListCtrl);
 	CDialog::OnClose();
 }
 
@@ -1371,6 +1485,7 @@ void CSaveDataToDBDlg::OnBnClickedButton1()
 	// TODO: Add your control notification handler code here
 	GetDlgItem(IDC_BUTTON_StarUpDateDB)->EnableWindow(FALSE);
 	GetDlgItem(IDCANCEL)->EnableWindow(FALSE);
+	SetDlgItemText(IDC_BUTTON_StarUpDateDB, "设备连接中，请稍后。。。");
 
 	//memset(g_CameraGroup, 0, sizeof(g_CameraGroup));
 	LocalDataBaseControler tempDB;
@@ -1383,6 +1498,12 @@ void CSaveDataToDBDlg::OnBnClickedButton1()
 	{
 		if (g_CameraGroup[i])
 		{
+			CString strDeviceID;
+			strDeviceID.Format("%d", g_CameraGroup[i]->m_iDiviceID);
+			CString strDeviceIP(g_CameraGroup[i]->m_strIp.c_str());
+			CString strDeviceStatus;
+			CString strResultCount("");
+			UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strResultCount, strResultCount);
 			//if (!g_CameraGroup[i]->SetListAndMutex(&m_lsReadLocal, &m_hReadLocal, &m_lsReadRemote, &m_hReadRemote))
 			if( !g_CameraGroup[i]->SetListAndCriticalSection(&m_lsReadLocal, &m_csReadLocal, &m_lsReadRemote, &m_csReadRemote) )
 			{
@@ -1407,14 +1528,17 @@ void CSaveDataToDBDlg::OnBnClickedButton1()
 	//创建循环覆盖线程
 	m_hCircleDelete = (HANDLE)_beginthreadex(NULL, 0, &ThreadCirclelaryDelete, this, 0, NULL);
 
+	SetDlgItemText(IDC_BUTTON_StarUpDateDB, "启动数据录入");
 	GetDlgItem(IDCANCEL)->EnableWindow(TRUE);
 }
 
 void CSaveDataToDBDlg::OnBnClickedCancel()
 {
 	// TODO: Add your control notification handler code here
-	m_bExit  = true;
+	GetDlgItem(IDCANCEL)->EnableWindow(FALSE);
+	SetDlgItemText(IDCANCEL, "程序退出中，请稍后。。。");
 
+	m_bExit = true;
 	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
 	{
 		if (g_CameraGroup[i])
@@ -1423,9 +1547,9 @@ void CSaveDataToDBDlg::OnBnClickedCancel()
 			g_CameraGroup[i] = NULL;
 		}
 	}
-	GetDlgItem(IDC_BUTTON_StarUpDateDB)->EnableWindow(TRUE);
+	
 	StopToSaveDBData();
-
+	GetDlgItem(IDC_BUTTON_StarUpDateDB)->EnableWindow(TRUE);
 	OnCancel();
 }
 
@@ -1464,4 +1588,328 @@ void CSaveDataToDBDlg::WriteDlgRemotLog( char* logBuf )
 		file = NULL;
 	}
 	LeaveCriticalSection(&m_csDlgRemoteLog);
+}
+
+bool CSaveDataToDBDlg::UpdateListCtrlView( CString& strDeviceID, CString& strCameraIP, CString& strCamerStatus,CString& strLocalResultCount, CString& strRemoteResultCount )
+{
+	EnterCriticalSection(&m_csUpdateListCtrl);
+
+	int i = 0, j = 0;
+	bool bFindListItem = false, bFindDataItem = false ;
+	for ( i = 0; i< m_lsListCtrl.GetItemCount(); i++)
+	{
+		if (m_lsListCtrl.GetItemText(i, 1) ==  strDeviceID)
+		{
+			bFindListItem = true;
+			break;
+		}
+	}
+
+	for (j = 0; j < MAX_PATH; j++)
+	{
+		if (m_ListCtrlDataGroup[j].strDeviceID ==  strDeviceID)
+		{
+			bFindDataItem = true;
+			break;
+		}
+	}
+
+	if (bFindListItem)
+	{
+		if ("" != strCameraIP)
+		{
+			m_ListCtrlDataGroup[j].strDeviceIP = strCameraIP;
+			m_lsListCtrl.SetItemText(i, 2, m_ListCtrlDataGroup[j].strDeviceIP);
+		}
+		if ("" != strCamerStatus)
+		{
+			m_ListCtrlDataGroup[j].strDeviceStatus = strCamerStatus;
+			m_lsListCtrl.SetItemText(i, 3, m_ListCtrlDataGroup[j].strDeviceStatus);
+		}
+		if ("" != strLocalResultCount)
+		{
+			CString tempCount = m_lsListCtrl.GetItemText(i, 4);
+			int iCount = _tstoi(tempCount);
+			iCount++;
+			tempCount.Format("%d", iCount);
+			m_ListCtrlDataGroup[j].strLocalResultCount = tempCount;
+			m_lsListCtrl.SetItemText(i, 4, m_ListCtrlDataGroup[j].strLocalResultCount);
+		}
+		if ("" != strRemoteResultCount)
+		{
+			CString tempCount = m_lsListCtrl.GetItemText(i, 5);
+			int iCount = _tstoi(tempCount);
+			iCount++;
+			tempCount.Format("%d", iCount);			
+			m_ListCtrlDataGroup[j].strRemoteResultCount = tempCount;
+			m_lsListCtrl.SetItemText(i, 5, m_ListCtrlDataGroup[j].strRemoteResultCount);
+		}
+	}
+	else
+	{
+		int i = 0;
+		for (i; i < MAX_PATH; i++)
+		{
+			if ("" == m_ListCtrlDataGroup[i].strDeviceID)
+			{
+				break;
+			}
+		}
+
+		char chLineNum[128] = {0};
+		sprintf(chLineNum, "%d", i);
+
+		m_ListCtrlDataGroup[i].strLineNum = chLineNum;
+		m_ListCtrlDataGroup[i].strDeviceID = strDeviceID;
+		m_ListCtrlDataGroup[i].strDeviceIP = strCameraIP;
+		m_ListCtrlDataGroup[i].strDeviceStatus = strCamerStatus;
+
+		LV_ITEM templvi;
+		templvi.mask = LVIF_TEXT|LVIF_PARAM|LVIF_IMAGE;
+		templvi.iItem = m_lsListCtrl.GetItemCount();	
+
+		templvi.iSubItem = 0;
+		templvi.pszText = (LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strLineNum;
+		templvi.lParam = (LPARAM)&m_ListCtrlDataGroup[i];
+
+		if (-1 == m_lsListCtrl.InsertItem(&templvi))
+		{
+			return false;
+		}
+		m_lsListCtrl.SetItemText(i, 0, chLineNum);
+		//设置DeviceID
+		templvi.iSubItem = 1;
+		templvi.pszText = (LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strDeviceID;
+		m_lsListCtrl.SetItem(&templvi);
+		m_lsListCtrl.SetItemText(i, 1, m_ListCtrlDataGroup[i].strDeviceID);
+		//templvi.lParam = (LPARAM)&m_ListCtrlDataGroup[i];
+
+		if ("" != strCameraIP)
+		{
+			templvi.iSubItem  = 2;
+			templvi.pszText = (LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strDeviceIP;
+			m_lsListCtrl.SetItem(&templvi);
+			m_lsListCtrl.SetItemText(i, 2, m_ListCtrlDataGroup[i].strDeviceIP);
+		}
+		if ("" != strCamerStatus)
+		{
+			templvi.iSubItem  = 3;
+			templvi.pszText = (LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strDeviceStatus;
+			m_lsListCtrl.SetItem(&templvi);
+			m_lsListCtrl.SetItemText(i, 3, m_ListCtrlDataGroup[i].strDeviceStatus);
+		}
+		if ("" != strLocalResultCount)
+		{
+			CString tempCount = m_lsListCtrl.GetItemText(i, 4);
+			int iCount = _tstoi(tempCount);
+			iCount++;
+			tempCount.Format("%d", iCount);
+			m_ListCtrlDataGroup[i].strLocalResultCount = tempCount;
+
+			templvi.iSubItem  = 4;
+			templvi.pszText = (LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strLocalResultCount;
+			m_lsListCtrl.SetItem(&templvi);
+			m_lsListCtrl.SetItemText(i, 4, m_ListCtrlDataGroup[i].strLocalResultCount);
+		}
+		else
+		{
+			templvi.iSubItem  = 4;			
+			m_ListCtrlDataGroup[i].strLocalResultCount.Format("0");
+			templvi.pszText = (LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strLocalResultCount;
+			m_lsListCtrl.SetItem(&templvi);
+			m_lsListCtrl.SetItemText(i, 4, m_ListCtrlDataGroup[i].strLocalResultCount);
+		}
+
+		if ("" != strRemoteResultCount)
+		{
+			CString tempCount = m_lsListCtrl.GetItemText(i, 5);
+			int iCount = _tstoi(tempCount);
+			iCount++;
+			tempCount.Format("%d", iCount);
+			m_ListCtrlDataGroup[i].strRemoteResultCount= tempCount;
+
+			templvi.iSubItem  = 5;
+			templvi.pszText =(LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strRemoteResultCount;
+			m_lsListCtrl.SetItem(&templvi);
+			m_lsListCtrl.SetItemText(i, 5, m_ListCtrlDataGroup[i].strRemoteResultCount);
+		}
+		else
+		{
+			templvi.iSubItem  = 5;
+			m_ListCtrlDataGroup[i].strRemoteResultCount.Format("0");
+			templvi.pszText = (LPSTR)(LPCSTR)m_ListCtrlDataGroup[i].strRemoteResultCount;
+			m_lsListCtrl.SetItem(&templvi);
+			m_lsListCtrl.SetItemText(i, 5, m_ListCtrlDataGroup[i].strRemoteResultCount);
+		}
+	}
+	LeaveCriticalSection(&m_csUpdateListCtrl);
+	return true;
+}
+
+void CSaveDataToDBDlg::OnBnClickedCheckAutoconect()
+{
+
+	char chFileName[MAX_PATH];
+	GetModuleFileNameA(NULL, chFileName, MAX_PATH-1);
+	PathRemoveFileSpecA(chFileName);
+	char chIniFileName[MAX_PATH] = { 0 };
+	strcpy(chIniFileName, chFileName);
+	strcat(chIniFileName, "\\HvConfig.ini");
+
+	// TODO: Add your control notification handler code here
+	if (BST_CHECKED == IsDlgButtonChecked(IDC_CHECK_AUTOCONECT))
+	{
+		WritePrivateProfileStringA("AutoRun","RunEnable","1",chIniFileName);
+	}
+	else
+	{
+		WritePrivateProfileStringA("AutoRun","RunEnable","0",chIniFileName);
+	}
+}
+
+void CSaveDataToDBDlg::OnLvnColumnclickListDevice(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	m_lsListCtrl.SortItems(MyCompareProc, pNMLV->iSubItem);
+	*pResult = 0;
+}
+
+//对IP进行升序排列
+bool asscendingSort(CString& str1,CString &str2)
+{
+	if (str1 == str2)
+	{
+		return true;
+	}
+	int a1,a2,a3,a4,b1,b2,b3,b4;
+	sscanf(str1.GetBuffer(),"%d.%d.%d.%d",&a1,&a2,&a3,&a4);
+	sscanf(str2.GetBuffer(),"%d.%d.%d.%d",&b1,&b2,&b3,&b4);
+	if(a1 == b1)
+	{
+		if (a2 == b2)
+		{
+			if (a3 == b3)
+			{
+				if (a4 == b4)
+				{
+					return true;
+				} 
+				else
+				{
+					return (a4 < b4 ? true : false);
+				}
+			} 
+			else
+			{
+				return (a3 < b3 ? true : false);
+			}
+		}
+		else
+		{
+			return (a2 < b2 ? true : false);
+		}
+	}
+	else
+	{
+		return (a1 < b1 ? true : false);
+	}
+}
+int CALLBACK CSaveDataToDBDlg::MyCompareProc( LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort )
+{
+	ListItemData* pItem1 = (ListItemData*)lParam1;
+	ListItemData* pItem2 = (ListItemData*)lParam2;
+
+	int nRet = 0;
+	switch(lParamSort)
+	{
+	case (0):
+		if (pItem1->strLineNum < pItem2->strLineNum)
+		{
+			nRet = -1;
+		}
+		else if (pItem1->strLineNum > pItem2->strLineNum)
+		{
+			nRet = 1;
+		}
+		else
+		{
+			nRet = 0;
+		}
+		break;
+	case (1):
+		if (pItem1->strDeviceID < pItem2->strDeviceID)
+		{
+			nRet = -1;			
+		}
+		else if(pItem1->strDeviceID > pItem2->strDeviceID)
+		{
+			nRet = 1;
+		}
+		else
+		{
+			nRet = 0;
+		}
+		break;
+	case (2):
+		if (pItem1->strDeviceIP == pItem2->strDeviceIP )
+		{
+			nRet =0;			
+		}
+		else if( asscendingSort(pItem1->strDeviceIP,  pItem2->strDeviceIP))
+		{
+			nRet = -1;
+		}
+		else
+		{
+			nRet = 1;
+		}
+		break;
+	case (3):
+		if ("连接正常" == pItem1->strDeviceStatus  && "连接正常" !=  pItem2->strDeviceStatus)
+		{
+			nRet = -1;			
+		}
+		else if(pItem1->strDeviceStatus  ==  pItem2->strDeviceStatus)
+		{
+			nRet = 0;
+		}
+		else
+		{
+			nRet = 1;
+		}
+		break;
+	case (4):
+		if (pItem1->strLocalResultCount < pItem2->strLocalResultCount)
+		{
+			nRet = -1;			
+		}
+		else if(pItem1->strLocalResultCount > pItem2->strLocalResultCount)
+		{
+			nRet = 1;
+		}
+		else
+		{
+			nRet = 0;
+		}
+		break;
+	case (5):
+		if (pItem1->strRemoteResultCount < pItem2->strRemoteResultCount)
+		{
+			nRet = -1;			
+		}
+		else if(pItem1->strRemoteResultCount > pItem2->strRemoteResultCount)
+		{
+			nRet = 1;
+		}
+		else
+		{
+			nRet = 0;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return nRet;
 }
