@@ -8,6 +8,7 @@
 #include "afxcmn.h"
 #include "afxwin.h"
 
+#define MAX_THREADCOUNT 5
 
 struct ListItemData
 {
@@ -61,8 +62,8 @@ public:
 	std::list<CameraResult*>m_lsReadRemote;
 	std::list<CameraResult*>m_lsSaveRemote;
 
-	HANDLE m_hSaveLocalDB;
-	HANDLE m_hSaveRemoteDB;
+	HANDLE m_hSaveLocalDB[MAX_THREADCOUNT];
+	HANDLE m_hSaveRemoteDB[MAX_THREADCOUNT];
 
 	HANDLE m_hSaveStatusToDB;
 
@@ -125,6 +126,9 @@ public:
 	bool GetDiskFreeSpaceT(char* szDiskChar, ULONGLONG& DiskFreeSpace);
 	int CirclelaryDelete(char* folderPath, int iBackUpDays);
 	bool DeleteDirectory(char* strDirName);
+
+	static unsigned __stdcall ThreadConnectDevice(void* TheParam);
+	void ConnectDevice(void);
 
 	void StopToSaveDBData();
 

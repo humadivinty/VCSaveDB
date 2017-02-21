@@ -136,8 +136,11 @@ BOOL CSaveDataToDBDlg::OnInitDialog()
 	m_hSaveLocal = NULL;
 	m_hReadRemote = NULL;
 	m_hSaveRemote = NULL;
-	m_hSaveLocalDB = NULL;
-	m_hSaveRemoteDB =NULL;
+	for(int i = 0; i<MAX_THREADCOUNT; i++)
+	{
+		m_hSaveLocalDB[i] = NULL;
+		m_hSaveRemoteDB[i] =NULL;
+	}
 	m_hSaveStatusToDB = NULL;
 	m_hCircleDelete = NULL;
 
@@ -1225,16 +1228,20 @@ void CSaveDataToDBDlg::OnClose()
 		CloseHandle(m_hSaveRemote);
 		m_hSaveRemote = NULL;
 	}
-	if (m_hSaveLocalDB)
+	for (int i = 0; i<MAX_THREADCOUNT; i++)
 	{
-		CloseHandle(m_hSaveLocalDB);
-		m_hSaveLocalDB = NULL;
+		if (m_hSaveLocalDB[i])
+		{
+			CloseHandle(m_hSaveLocalDB[i]);
+			m_hSaveLocalDB[i] = NULL;
+		}
+		if (m_hSaveRemoteDB[i])
+		{
+			CloseHandle(m_hSaveRemoteDB[i]);
+			m_hSaveRemoteDB[i] =NULL;
+		}
 	}
-	if (m_hSaveRemoteDB)
-	{
-		CloseHandle(m_hSaveRemoteDB);
-		m_hSaveRemoteDB =NULL;
-	}
+
 	if (m_hSaveStatusToDB)
 	{
 		CloseHandle(m_hSaveStatusToDB);
@@ -1526,41 +1533,52 @@ void CSaveDataToDBDlg::OnBnClickedButton1()
 	GetDlgItem(IDCANCEL)->EnableWindow(FALSE);
 	SetDlgItemText(IDC_BUTTON_StarUpDateDB, "设备连接中，请稍后。。。");
 
-	//memset(g_CameraGroup, 0, sizeof(g_CameraGroup));
-	LocalDataBaseControler tempDB;
-	char chTempConnectInfo[256] = {0};
-	tempDB.ConnectToDB(chTempConnectInfo);
-	tempDB.InitCameraGroup(g_CameraGroup);
-	WriteDlgLog(chTempConnectInfo);
-	tempDB.CloseDBConnect();
-	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
+	CMenu* psysMenu = GetSystemMenu(FALSE);
+	if(NULL != psysMenu)
 	{
-		if (g_CameraGroup[i])
+		psysMenu->EnableMenuItem(SC_CLOSE, TRUE);
+	}
+
+	//连接设备
+	_beginthreadex( NULL, 0, &ThreadConnectDevice, this, 0, NULL );
+
+	////创建本地数据库插入的相关线程
+	//m_hReadLocal = (HANDLE)_beginthreadex( NULL, 0, &ThreadReadLocal, this, 0, NULL );
+	//m_hSaveLocal = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveLocal, this, 0, NULL );
+	//m_hSaveLocalDB = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveLocalDB, this, 0, NULL );
+
+	////创建远端数据库插入的相关线程
+	//m_hReadRemote = (HANDLE)_beginthreadex( NULL, 0, &ThreadReadRemote, this, 0, NULL );
+	//m_hSaveRemote = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveRemote, this, 0, NULL );
+	//m_hSaveRemoteDB = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveRemoteDB, this, 0, NULL );
+
+	if (m_bLocalDBEnable)
+	{
+		//创建本地数据库插入的相关线程
+		m_hReadLocal = (HANDLE)_beginthreadex( NULL, 0, &ThreadReadLocal, this, 0, NULL );
+		m_hSaveLocal = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveLocal, this, 0, NULL );
+		for(int i = 0; i<MAX_THREADCOUNT; i++)
 		{
-			CString strDeviceID;
-			strDeviceID.Format("%d", g_CameraGroup[i]->m_iDiviceID);
-			CString strDeviceIP(g_CameraGroup[i]->m_strIp.c_str());
-			CString strDeviceStatus;
-			CString strResultCount("");
-			UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strResultCount, strResultCount);
-			//if (!g_CameraGroup[i]->SetListAndMutex(&m_lsReadLocal, &m_hReadLocal, &m_lsReadRemote, &m_hReadRemote))
-			if( !g_CameraGroup[i]->SetListAndCriticalSection(&m_lsReadLocal, &m_csReadLocal, &m_lsReadRemote, &m_csReadRemote) )
+			if (m_hSaveLocalDB[i] == NULL)
 			{
-				continue;
-			}
-			g_CameraGroup[i]->OpenDevice();
+				m_hSaveLocalDB[i] =(HANDLE)_beginthreadex( NULL, 0, &ThreadSaveLocalDB, this, 0, NULL );
+			}	
 		}
 	}
 
-	//创建本地数据库插入的相关线程
-	m_hReadLocal = (HANDLE)_beginthreadex( NULL, 0, &ThreadReadLocal, this, 0, NULL );
-	m_hSaveLocal = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveLocal, this, 0, NULL );
-	m_hSaveLocalDB = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveLocalDB, this, 0, NULL );
-
-	//创建远端数据库插入的相关线程
-	m_hReadRemote = (HANDLE)_beginthreadex( NULL, 0, &ThreadReadRemote, this, 0, NULL );
-	m_hSaveRemote = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveRemote, this, 0, NULL );
-	m_hSaveRemoteDB = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveRemoteDB, this, 0, NULL );
+	if (m_bRemoteDBEnable)
+	{
+		//创建远端数据库插入的相关线程
+		m_hReadRemote = (HANDLE)_beginthreadex( NULL, 0, &ThreadReadRemote, this, 0, NULL );
+		m_hSaveRemote = (HANDLE)_beginthreadex( NULL, 0, &ThreadSaveRemote, this, 0, NULL );
+		for(int i = 0; i<MAX_THREADCOUNT; i++)
+		{
+			if (m_hSaveRemoteDB[i] == NULL)
+			{
+				m_hSaveRemoteDB[i] =(HANDLE)_beginthreadex( NULL, 0, &ThreadSaveRemoteDB, this, 0, NULL );
+			}	
+		}
+	}
 
 	//创建状态插入线程
 	m_hSaveStatusToDB = (HANDLE)_beginthreadex(NULL, 0, &ThreadSafeStatuToDB, this, 0,NULL);
@@ -1975,4 +1993,57 @@ BOOL CSaveDataToDBDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 	}
 
 	return CDialog::OnSetCursor(pWnd, nHitTest, message);
+}
+
+unsigned __stdcall CSaveDataToDBDlg::ThreadConnectDevice( void* TheParam )
+{
+	if(NULL  == TheParam)
+		return -1;
+	CSaveDataToDBDlg* pThis = (CSaveDataToDBDlg*)TheParam;
+	pThis->ConnectDevice();
+	return 0;
+}
+
+void CSaveDataToDBDlg::ConnectDevice( void )
+{
+	LocalDataBaseControler tempDB;
+	char chTempConnectInfo[256] = {0};
+	tempDB.ConnectToDB(chTempConnectInfo);
+	tempDB.InitCameraGroup(g_CameraGroup);
+	WriteDlgLog(chTempConnectInfo);
+	tempDB.CloseDBConnect();
+	for (int i = 0; i< MAX_CAMERA_COUNT; i++)
+	{
+		if (g_CameraGroup[i])
+		{
+			CString strDeviceID;
+			strDeviceID.Format("%d", g_CameraGroup[i]->m_iDiviceID);
+			CString strDeviceIP(g_CameraGroup[i]->m_strIp.c_str());
+			CString strDeviceStatus;
+			CString strResultCount("");
+			//UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strResultCount, strResultCount);
+			//if (!g_CameraGroup[i]->SetListAndMutex(&m_lsReadLocal, &m_hReadLocal, &m_lsReadRemote, &m_hReadRemote))
+			if( !g_CameraGroup[i]->SetListAndCriticalSection(&m_lsReadLocal, &m_csReadLocal, &m_lsReadRemote, &m_csReadRemote) )
+			{
+				continue;
+			}
+			int iRet = g_CameraGroup[i]->OpenDevice();
+			if (0 == iRet)
+			{
+				strDeviceStatus.Format("连接正常");
+			}
+			else
+			{
+				strDeviceStatus.Format("连接已断开");
+			}
+			UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strResultCount, strResultCount);
+		}
+	}
+
+	GetDlgItem(IDCANCEL)->EnableWindow(TRUE);
+	CMenu* psysMenu = GetSystemMenu(FALSE);
+	if(NULL != psysMenu)
+	{
+		psysMenu->EnableMenuItem(SC_CLOSE, FALSE);
+	}
 }

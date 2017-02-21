@@ -200,6 +200,7 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 		GetLocalTime(&st);
 		sprintf(m_safeModeInfo.chBeginTime, "%d.%d.%d_%d", st.wYear, st.wMonth, st.wDay, st.wHour);
 		WriteHistoryIniFile();
+		m_safeModeInfo.index = dwCarID;
 	}
 	if (NULL == m_Result)
 	{
@@ -209,50 +210,13 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	m_bResultComplete = true;
 
 	//加入结果队列中
-	//if (m_ResultList.GetCount() < MAX_LIST_COUNT)
 	if (m_ResultList.size() < MAX_LIST_COUNT)
 	{
-		//int resultCount = m_ResultList.GetCount();
-		//m_ResultList.AddTail(m_Result);
-
 		m_ResultList.push_back(m_Result);
 
-		long previousCount;			
-
-		if (NULL != m_Result)
-		{
-			//将结果加入队列中
-			//WaitForSingleObject(g_hLocalListMutex, 70l);				//2015-01-19
-			if (m_bDbEnable)
-			{
-				CameraResult *tempLocalResult =NULL;
-				EnterCriticalSection(g_csLocalCriticalSection);
-				tempLocalResult = new CameraResult(*m_Result);
-				if(NULL != tempLocalResult)
-				{
-					g_lsLocalData->push_back(tempLocalResult);
-				}
-				LeaveCriticalSection(g_csLocalCriticalSection);
-			}			
-			//ReleaseMutex(g_hLocalListMutex);							//2015-01-19
-			
-
-			//WaitForSingleObject(g_hRemoteListMutex, 70l);			//2015-01-19
-			if (m_bMidDbEnable)
-			{
-				EnterCriticalSection(g_csRemoteCriticalSection);
-				CameraResult *tempRemoteResult = NULL;
-				tempRemoteResult =new CameraResult(*m_Result);
-				if (NULL != tempRemoteResult)
-				{
-					g_lsRemoteData->push_back(tempRemoteResult);
-				}
-				LeaveCriticalSection(g_csRemoteCriticalSection);
-			}
-			//ReleaseMutex(g_hRemoteListMutex);						//2015-01-19
-			
-		}
+		long previousCount;
 		m_Result = NULL;
+
 		ReleaseSemaphore(m_hSemaphore,1,&previousCount);	
 	}
 	else
@@ -1010,9 +974,7 @@ int CCamera::OpenDevice()
 
 		DisConnect();
 		iRet = -1;
-		return -1;
-	}	
-
+	}
 	return iRet;
 }
 //抓拍函数
@@ -1493,7 +1455,6 @@ int CCamera::SaveResultThreadFunction()
 			continue;
 		}
 
-		//CameraResult *tempResult = m_ResultList.RemoveHead();
 		CameraResult *tempResult = NULL;
 		tempResult = m_ResultList.front();
 		m_ResultList.pop_front();
@@ -1502,6 +1463,34 @@ int CCamera::SaveResultThreadFunction()
 			continue;
 		 // 保存结果
 		saveImage(tempResult);
+
+		if (NULL != tempResult)
+		{
+			//将结果加入数据库队列中
+			if (m_bDbEnable)
+			{
+				CameraResult *tempLocalResult =NULL;
+				EnterCriticalSection(g_csLocalCriticalSection);
+				tempLocalResult = new CameraResult(*tempResult);
+				if(NULL != tempLocalResult)
+				{
+					g_lsLocalData->push_back(tempLocalResult);
+				}
+				LeaveCriticalSection(g_csLocalCriticalSection);
+			}
+
+			if (m_bMidDbEnable)
+			{
+				EnterCriticalSection(g_csRemoteCriticalSection);
+				CameraResult *tempRemoteResult = NULL;
+				tempRemoteResult =new CameraResult(*tempResult);
+				if (NULL != tempRemoteResult)
+				{
+					g_lsRemoteData->push_back(tempRemoteResult);
+				}
+				LeaveCriticalSection(g_csRemoteCriticalSection);
+			}
+		}
 
 		// 删除旧的结果
 		if (tempResult != NULL)

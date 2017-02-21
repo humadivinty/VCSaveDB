@@ -64,7 +64,7 @@ HRESULT BaseDataBaseControl::ConnectToDB(char* ConnectInfo)
 			return hr;
 		}
 		char chConnectString[MAX_PATH] = {0};
-		//m_pConnectionPtr->CommandTimeout = 200;
+		m_pConnectionPtr->CommandTimeout = 200;
 		m_pConnectionPtr->CursorLocation = adUseClient;
 		m_pConnectionPtr->IsolationLevel = adXactReadCommitted;
 		//sprintf(chConnectString, "Provider = SQLOLEDB; Server = %s; DataBase=%s; uid=%s;pwd=%s", m_chServerIP, m_chDBName, m_chDBUserID, m_chDBPassword);
