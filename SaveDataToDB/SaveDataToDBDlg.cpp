@@ -7,6 +7,10 @@
 #include ".\savedatatodbdlg.h"
 
 #include <new>
+//-------------2015-07-27-01-----------
+#include <DbgHelp.h>
+#pragma comment(lib,"DbgHelp.lib") 
+//------------------------end-----------
 
 //---------------2015-07-21----
 #include  <Winsvc.h>
@@ -35,6 +39,40 @@ inline bool IsSvcRun(LPCTSTR lpszSvcName)
 	return QueryServiceStatus(OpenService(OpenSCManager(NULL, NULL, GENERIC_READ), lpszSvcName, GENERIC_READ), &svcStatus) ? (svcStatus.dwCurrentState == SERVICE_RUNNING) : false;
 }
 //----------------------END-----------------
+
+
+// 创建Dump文件  
+//   
+void CreateDumpFile(char* lpstrDumpFilePathName, EXCEPTION_POINTERS *pException)  
+{  
+	// 创建Dump文件  
+	//  
+	HANDLE hDumpFile = CreateFile(lpstrDumpFilePathName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);  
+
+	// Dump信息  
+	//  
+	MINIDUMP_EXCEPTION_INFORMATION dumpInfo;  
+	dumpInfo.ExceptionPointers = pException;  
+	dumpInfo.ThreadId = GetCurrentThreadId();  
+	dumpInfo.ClientPointers = TRUE;  
+
+	// 写入Dump文件内容  
+	//  
+	MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile, MiniDumpNormal, &dumpInfo, NULL, NULL);  
+
+	CloseHandle(hDumpFile);  
+}
+LONG ApplicationCrashHandler(EXCEPTION_POINTERS *pException)  
+{     
+	// 这里弹出一个错误对话框并退出程序  
+	//  
+	CreateDumpFile(_T("./Test.dmp"), pException); 
+	FatalAppExit(-1,  _T("*** Unhandled Exception! ***"));  
+
+
+	return EXCEPTION_EXECUTE_HANDLER;  
+}  
+
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -133,6 +171,8 @@ BOOL CSaveDataToDBDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码	
+	SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)ApplicationCrashHandler);
+
 	GetDlgItem(IDC_STATIC_EXITSHOW)->ShowWindow(SW_HIDE);
 	
 
@@ -282,6 +322,7 @@ void CSaveDataToDBDlg::SaveLocal( void )
 		EnterCriticalSection(&m_csSaveLocal);
 		if (m_lsSaveLocal.size() > 0)
 		{
+			WriteDlgLog("SaveLocal function begin");
 			//WaitForSingleObject(m_hSaveLocal, 70l);			//2015-01-19
 			
 			CameraResult* tempResult = NULL;
@@ -291,6 +332,7 @@ void CSaveDataToDBDlg::SaveLocal( void )
 			{
 				//ReleaseMutex(m_hSaveLocal);		//2015-01-19
 				LeaveCriticalSection(&m_csSaveLocal);
+				WriteDlgLog("SaveLocal function 1");
 				continue;
 			}
             LeaveCriticalSection(&m_csSaveLocal);
@@ -298,13 +340,16 @@ void CSaveDataToDBDlg::SaveLocal( void )
 			{
 				//ReleaseMutex(m_hSaveLocal);		//2015-01-19
                 //LeaveCriticalSection(&m_csSaveLocal);
+				WriteDlgLog("SaveLocal function 2");
                 if (NULL != tempResult)
                 {
                     delete tempResult;
                     tempResult = NULL;
                 }
+				WriteDlgLog("SaveLocal function 3");
 				continue;
 			}
+			WriteDlgLog("SaveLocal function 4");
 			strLocalFilePath.Format("%s\\%s.dat", m_strLocalFilePath, tempResult->chListNo);
 			CFile theFile;
 			theFile.Open(strLocalFilePath, CFile::modeCreate|CFile::modeWrite);
@@ -312,17 +357,20 @@ void CSaveDataToDBDlg::SaveLocal( void )
 			(*tempResult).Serialize(theArchive);
 			theArchive.Close();
 			theFile.Close();
+			WriteDlgLog("SaveLocal function 5");
 			if (NULL != tempResult)
 			{
 				delete tempResult;
 				tempResult = NULL;
 			}
+			WriteDlgLog("SaveLocal function End");
 			//ReleaseMutex(m_hSaveLocal);		//2015-01-19
             //LeaveCriticalSection(&m_csSaveLocal);
 		}
 		else
-		{
+		{			
 			LeaveCriticalSection(&m_csSaveLocal);
+			WriteDlgLog("SaveLocal function End2");
 			Sleep(2000);
 		}
 	}
@@ -345,6 +393,7 @@ void CSaveDataToDBDlg::ReadLocal( void )
 	CString strtmpFileName;
 	while(!m_bExit)
 	{
+		WriteDlgLog("ReadLocal function begin.");
 		if (m_bExit)
 		{
 			WriteDlgLog("Leave ReadLocal function.");
@@ -436,6 +485,7 @@ void CSaveDataToDBDlg::ReadLocal( void )
 		}
 
 		finder.Close();
+		WriteDlgLog("ReadLocal function end.");
 	}
 	return;
 }
@@ -460,11 +510,12 @@ void CSaveDataToDBDlg::SaveRemote( void )
 
 		if (m_bSaveRemoteThreadExit)
 		{
-			WriteDlgLog("Leave SaveRemote function");
+			WriteDlgRemotLog("Leave SaveRemote function");
 			break;
 		}
 
 		EnterCriticalSection(&m_csSaveRemote);
+		WriteDlgRemotLog("SaveRemote function begin");
 		if (m_lsSaveRemote.size() > 0)
 		{
 			//WaitForSingleObject(m_hSaveRemote, 70l);			//2015-01-19
@@ -506,10 +557,12 @@ void CSaveDataToDBDlg::SaveRemote( void )
 			}
 			//ReleaseMutex(m_hSaveRemote);				//2015-01-19
             //LeaveCriticalSection(&m_csSaveRemote);
+			WriteDlgRemotLog("SaveRemote function end");
 		}
 		else
 		{
 			LeaveCriticalSection(&m_csSaveRemote);
+			WriteDlgRemotLog("SaveRemote function end1");
 			Sleep(2000);
 		}
 	}
@@ -532,6 +585,7 @@ void CSaveDataToDBDlg::ReadRemote( void )
 	CString strtmpFileName;
 	while(!m_bExit)
 	{
+		WriteDlgRemotLog("ReadRemote begin.");
 		if (m_bExit)
 		{
 			WriteDlgRemotLog("Leave ReadRemote function.");
@@ -547,17 +601,19 @@ void CSaveDataToDBDlg::ReadRemote( void )
 			bWorking = finder.FindNextFile();
 			if (finder.IsDots())
 			{
+				WriteDlgRemotLog("ReadRemote continue 1.");
 				continue;
 			}
 			if (finder.IsDirectory())
 			{
+				WriteDlgRemotLog("ReadRemote continue 2.");
 				continue;
 			}
 			//信号量
 			BOOL bSuccess = FALSE;
 			//WaitForSingleObject(m_hRRemoteMutex, 70l);			//2015-01-19
             //EnterCriticalSection(&m_csReadRemote);
-
+			WriteDlgRemotLog("ReadRemote 1.");
 			strtmpFileName = finder.GetFilePath();
 			CameraResult* tempResult = new CameraResult();
 			CFile theRemoteFile;
@@ -571,8 +627,10 @@ void CSaveDataToDBDlg::ReadRemote( void )
 				}
 				//ReleaseMutex(m_hRRemoteMutex);			//2015-01-19
                 //LeaveCriticalSection(&m_csReadRemote);
+				WriteDlgRemotLog("ReadRemote continue 3.");
 				continue;
 			}
+			WriteDlgRemotLog("ReadRemote 2.");
 			//if (theRemoteFile.GetLength() <= 10)
 			ULONGLONG ulLenth = theRemoteFile.GetLength();
 			if ( ulLenth<= 100)
@@ -584,7 +642,7 @@ void CSaveDataToDBDlg::ReadRemote( void )
 				sprintf(chLogBuf, "%s数据长度异常，丢弃该数据", strtmpFileName.GetBuffer());
 				strtmpFileName.ReleaseBuffer();
 				WriteDlgRemotLog(chLogBuf);
-
+				WriteDlgRemotLog("ReadRemote continue 4.");
                 //LeaveCriticalSection(&m_csReadRemote);
 				continue;
 			}
@@ -592,30 +650,34 @@ void CSaveDataToDBDlg::ReadRemote( void )
 			(*tempResult).Serialize(theLoadArchive);
 			theLoadArchive.Close();
 			theRemoteFile.Close();
+			WriteDlgRemotLog("ReadRemote 3.");
             EnterCriticalSection(&m_csReadRemote);
 			if (m_lsReadRemote.size()>= 0 && m_lsReadRemote.size() < MAX_RESULT_COUNT)
 			{
 				m_lsReadRemote.push_back(tempResult);
+				LeaveCriticalSection(&m_csReadRemote);
 			}
 			else
 			{
+				LeaveCriticalSection(&m_csReadRemote);
 				bSuccess = FALSE;
 				if (NULL != tempResult)
 				{
 					delete tempResult;
 					tempResult = NULL;
 				}
-			}
-            LeaveCriticalSection(&m_csReadRemote);
+			}            
 			//ReleaseMutex(m_hRRemoteMutex);			//2015-01-19
-
+			WriteDlgRemotLog("ReadRemote 4.");
 			if (bSuccess)
 			{
 				DeleteFile(strtmpFileName);
 			}
+			WriteDlgRemotLog("ReadRemote 5.");
             //LeaveCriticalSection(&m_csReadRemote);
 		}
 		finder.Close();
+		WriteDlgRemotLog("ReadRemote end.");
 	}
 	return;
 }
@@ -652,9 +714,11 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 			break;			
 		}
 
-		EnterCriticalSection(&m_csReadLocal);
+		EnterCriticalSection(&m_csReadLocal);		
 		if (m_lsReadLocal.size() > 0)
-		{			
+		{
+			WriteDlgLog("Save Local DB  begin.");
+
 			CameraResult* tempResult = NULL;
 			tempResult = m_lsReadLocal.front();
 			m_lsReadLocal.pop_front();
@@ -666,7 +730,9 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				continue;
 			}
 			LeaveCriticalSection(&m_csReadLocal);
+			WriteDlgLog("SaveNormalDataToDB begin.");
 			hr1 = LocalDB.SaveNormalDataToDB(tempResult);
+			WriteDlgLog("SaveNormalDataToDB end.");
 			if (S_OK == hr1)
 			{
 
@@ -682,8 +748,9 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				CString strRemoteResultCount;
 				UpdateListCtrlView(strDeviceID, strDeviceIP, strDeviceStatus, strLocalResultCount, strRemoteResultCount);
 
-
+				WriteDlgLog("SaveBigImageToDB begin.");
 				hr1 = LocalDB.SaveBigImageToDB(tempResult->CIMG_FullImage.pbImgData, tempResult->chListNo, tempResult->CIMG_FullImage.dwImgSize);
+				WriteDlgLog("SaveBigImageToDB end.");
 				if(S_OK != hr1)
 				{
 					sprintf(chNormalDataBuf, "图片本地库保存失败, listNo = %s", tempResult->chListNo);
@@ -698,6 +765,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				}
 				if (NULL != tempResult->CIMG_PlateImage.pbImgData)
 				{
+					WriteDlgLog("SaveSmallImageToDB begin.");
 					if (S_OK != LocalDB.SaveSmallImageToDB(tempResult->CIMG_PlateImage.pbImgData, tempResult->chListNo, tempResult->CIMG_PlateImage.dwImgSize))
 					{
 						sprintf(chNormalDataBuf, "车牌小图本地库保存失败,listNo = %s", tempResult->chListNo);
@@ -710,10 +778,12 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 						ShowMessage(chNormalDataBuf);
 						WriteDlgLog(chNormalDataBuf);
 					}
+					WriteDlgLog("SaveSmallImageToDB end.");
 				}
 				delete tempResult;
 				tempResult = NULL;
 				//ReleaseMutex(m_hReadLocal);		//2015-01-19
+				WriteDlgLog("Save Local DB  end.");
 			}
 			else
 			{
@@ -726,6 +796,7 @@ void CSaveDataToDBDlg::SaveLocalDB( void )
 				m_lsSaveLocal.push_back(tempResult);
 				//ReleaseMutex(m_hReadLocal);			//2015-01-19
 				LeaveCriticalSection(&m_csSaveLocal);
+				WriteDlgLog("Save Local DB  end2.");
 			}
 			//LeaveCriticalSection(&m_csReadLocal);
 		}
@@ -775,7 +846,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 		EnterCriticalSection(&m_csReadRemote);
 		if (m_lsReadRemote.size() > 0)
 		{			
-			
+			WriteDlgRemotLog("Save Remote DB  begin.");
 			CameraResult* tempResult = m_lsReadRemote.front();
 			m_lsReadRemote.pop_front();
 
@@ -786,7 +857,9 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 				continue;
 			}
 			LeaveCriticalSection(&m_csReadRemote);
+			WriteDlgRemotLog("SaveNormalDataToDB  begin.");
 			hr1 = RemoteDB.SaveNormalDataToDB(tempResult);
+			WriteDlgRemotLog("SaveNormalDataToDB  end.");
 			if (S_OK == hr1)
 			{
 				CString strDeviceID;
@@ -802,6 +875,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 				WriteDlgRemotLog(chRemotDBInfo);
 				delete tempResult;
 				tempResult = NULL;
+				WriteDlgRemotLog("Save Remote DB  end.");
 			}
 			else
 			{
@@ -814,6 +888,7 @@ void CSaveDataToDBDlg::SaveRemoteDB( void )
 				m_lsSaveRemote.push_back(tempResult);
 				LeaveCriticalSection(&m_csSaveRemote);
 				//ReleaseMutex(m_hReadRemote);				//2015-01-19
+				WriteDlgRemotLog("Save Remote DB  end2.");
 			}
 			//LeaveCriticalSection(&m_csReadRemote);
 		}
@@ -858,6 +933,7 @@ void CSaveDataToDBDlg::SafeStatuToDB( void )
 	DWORD iLastStatusUpdateTick =0;
 	while(!m_bExit)
 	{
+		WriteDlgLog("SafeStatuToDB begin.");
 		if(m_bExit)
 		{
 			WriteDlgLog("Leave SafeStatuToDB function.");
@@ -925,7 +1001,8 @@ void CSaveDataToDBDlg::SafeStatuToDB( void )
 					}
 				}
 			}
-		}		
+		}
+		WriteDlgLog("SafeStatuToDB end.");
 		Sleep(2000);
 	}
 	if (m_bLocalDBEnable)
@@ -1702,6 +1779,8 @@ void CSaveDataToDBDlg::OnBnClickedCancel()
 	{
 		psysMenu->EnableMenuItem(SC_CLOSE, TRUE);
 	}
+
+	exit(1);
 
 	m_bExit = true;
 	for (int i = 0; i< MAX_CAMERA_COUNT; i++)

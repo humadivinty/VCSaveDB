@@ -136,9 +136,10 @@ CCamera::~CCamera(void)
 // 识别结果开始回调函数
 int CCamera::RecordInfoBegin(DWORD dwCarID)
 {
+	WriteLog("RecordInfoBegin begin");
 	EnterCriticalSection(&m_csResult);
 	try
-	{
+	{		
 		m_bResultComplete = false;
 
 		m_Result = NULL;
@@ -196,12 +197,14 @@ int CCamera::RecordInfoBegin(DWORD dwCarID)
 		}
 	}
 	LeaveCriticalSection(&m_csResult);
+	WriteLog("RecordInfoBegin End");
 	return 0;
 }
 
 // 识别结果结束回调函数
 int CCamera::RecordInfoEnd(DWORD dwCarID)
 {
+	WriteLog("RecordInfoEnd begin");
 	EnterCriticalSection(&m_csResult);
 	//更新历史记录信息
 	if (m_safeModeInfo.iEableSafeMode == 1)
@@ -214,6 +217,7 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	}
 	if (NULL == m_Result)
 	{
+		WriteLog("RecordInfoEnd end1");
 		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
@@ -251,6 +255,7 @@ int CCamera::RecordInfoEnd(DWORD dwCarID)
 	}
 
 	LeaveCriticalSection(&m_csResult);
+	WriteLog("RecordInfoEnd End");
 	return 0;
 }
 
@@ -261,12 +266,15 @@ int CCamera::RecordInfoPlate(DWORD dwCarID,
 							 DWORD dwRecordType,
 							 DWORD64 dw64TimeMS)
 {
+	WriteLog("RecordInfoPlate begin");
+
 	EnterCriticalSection(&m_csResult);
 
 	m_bResultComplete = false;
 
 	if (NULL == m_Result)
 	{
+		WriteLog("RecordInfoPlate end1");
 		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
@@ -291,6 +299,7 @@ int CCamera::RecordInfoPlate(DWORD dwCarID,
 	AnalyseRecord(m_Result);
 
 	LeaveCriticalSection(&m_csResult);
+	WriteLog("RecordInfoPlate End");
 	return 0;
 }
 
@@ -304,12 +313,14 @@ int CCamera::RecordInfoBigImage(DWORD dwCarID,
 								DWORD dwRecordType,
 								DWORD64 dw64TimeMS)
 {
+	WriteLog("RecordInfoBigImage begin");
 	EnterCriticalSection(&m_csResult);
 
 	m_bResultComplete = false;
 
 	if (NULL == m_Result)
 	{
+		WriteLog("RecordInfoBigImage end1");
 		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
@@ -365,6 +376,7 @@ int CCamera::RecordInfoBigImage(DWORD dwCarID,
 	}
 
 	LeaveCriticalSection(&m_csResult);
+	WriteLog("RecordInfoBigImage end");
 	return 0;
 }
 
@@ -377,12 +389,14 @@ int CCamera::RecordInfoSmallImage(DWORD dwCarID,
 								  DWORD dwRecordType,
 								  DWORD64 dw64TimeMS)
 {
+	WriteLog("RecordInfoSmallImage begin");
 	EnterCriticalSection(&m_csResult);
 
 	m_bResultComplete = false;
 
 	if (NULL == m_Result)
 	{
+		WriteLog("RecordInfoSmallImage End1");
 		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
@@ -414,6 +428,7 @@ int CCamera::RecordInfoSmallImage(DWORD dwCarID,
 	}
 
 	LeaveCriticalSection(&m_csResult);
+	WriteLog("RecordInfoSmallImage End");
 	return 0;
 }
 
@@ -426,12 +441,14 @@ int CCamera::RecordInfoBinaryImage(DWORD dwCarID,
 								   DWORD dwRecordType,
 								   DWORD64 dw64TimeMS)
 {
+	WriteLog("RecordInfoBinaryImage begin");
 	EnterCriticalSection(&m_csResult);
 
 	m_bResultComplete = false;
 
 	if (NULL == m_Result)
 	{
+		WriteLog("RecordInfoBinaryImage end1");
 		LeaveCriticalSection(&m_csResult);
 		return -1;
 	}
@@ -455,6 +472,7 @@ int CCamera::RecordInfoBinaryImage(DWORD dwCarID,
 		}
 	}
 	LeaveCriticalSection(&m_csResult);
+	WriteLog("RecordInfoBinaryImage end");
 	return 0;
 }
 
